@@ -1,5 +1,6 @@
 add_executable(blink
-        blink.c
+        blink.cpp
+        toggle.cpp
         )
 
 # pull in common dependencies
