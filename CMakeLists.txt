@@ -29,3 +29,4 @@ add_compile_options(-Wall
 # Hardware-specific examples in subdirectories:
 add_subdirectory(lcdTest)
 add_subdirectory(touchLCD)
+add_subdirectory(rtosSandbox)
