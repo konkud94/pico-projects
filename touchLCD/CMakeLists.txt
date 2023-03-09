@@ -2,6 +2,7 @@ add_executable(touchLCD
         main.cpp
         pinDefinitions/pinDefinitions.cpp
         touchController/touchController.cpp
+        lcdController/lcdDriver.cpp
         )
 
 # enable usb output, disable uart output
