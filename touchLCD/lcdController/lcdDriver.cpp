@@ -51,6 +51,12 @@ size_t CLcdDriver::FlushData(const uint8_t* data, size_t len) const
         CTransactionPayload(0x2b, yStartYEnd, sizeof(yStartYEnd)),
         CTransactionPayload(0x2c, nullptr, 0)
     };
+    const uint initialBaudRate = spi_get_baudrate(m_spi);
+    {
+        [[maybe_unused]] static constexpr uint debugSpeedHz = 100'000; 
+        /* should settle around 62.5 MHz */
+        spi_set_baudrate(m_spi, std::numeric_limits<uint>::max());
+    }
     for(const auto& wData : setWindowData)
     {
         HandleSpiTransfer([this, &wData](){
@@ -64,15 +70,11 @@ size_t CLcdDriver::FlushData(const uint8_t* data, size_t len) const
             spi_write_blocking(m_spi, wData.Data, wData.DataLengthBytes);
         }, ESpiTransferType::PARAMETER, ESpiTransferWidth::ONE_BYTE);
     }
-
     HandleSpiTransfer([this, &len, data](){
-        const uint initialBaudRate = spi_get_baudrate(m_spi);
-        [[maybe_unused]] static constexpr uint debugSpeedHz = 100'000; 
-        /* should settle around 62.5 MHz */
-        spi_set_baudrate(m_spi, std::numeric_limits<uint>::max());
         len = 2 * spi_write16_blocking(m_spi, (const uint16_t*)data, len / 2);
-        spi_set_baudrate(m_spi, initialBaudRate);
     }, ESpiTransferType::PARAMETER, ESpiTransferWidth::TWO_BYTES);
+
+    spi_set_baudrate(m_spi, initialBaudRate);
     return len;
 }
 int16_t CLcdDriver::GetLcdId() const

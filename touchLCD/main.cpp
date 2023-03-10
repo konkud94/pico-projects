@@ -2,11 +2,15 @@
 #include <initializer_list>
 #include <utility>
 #include "pico/stdlib.h"
+#include "pico/sync.h"
 #include "hardware/spi.h"
 #include "pinDefinitions/pinDefinitions.hpp"
 #include "touchController/touchController.hpp"
 #include "lcdController/lcdDriver.hpp"
 
+/*
+	important: max refresh rate is around 45 times per second!
+*/
 void setColorToBuffer(uint8_t* const buffer, const size_t bufferLenBytes, const uint16_t color)
 {
 	if(bufferLenBytes % 2 != 0)
@@ -20,6 +24,13 @@ void setColorToBuffer(uint8_t* const buffer, const size_t bufferLenBytes, const 
 	{
 		_buffer[idx] = color;
 	}
+}
+
+uint32_t GetTimeMSSinceBoot()
+{
+	const auto absoluteTime = get_absolute_time();
+	const uint32_t msSinceBoot = to_ms_since_boot(absoluteTime);
+	return msSinceBoot;
 }
 
 int main() 
@@ -84,7 +95,9 @@ int main()
 		for(size_t idx = 0; idx < sizeof(colors) / sizeof(colors[0]); idx++)
 		{
 			setColorToBuffer(buffer, lcdBufferSize, colors[idx]);
+			const uint32_t status = save_and_disable_interrupts();
 			const size_t bytesFlushed = lcdDriver->FlushData(buffer, lcdBufferSize);
+			restore_interrupts(status);
 			if(lcdBufferSize != bytesFlushed)
 			{
 				printf("Error: lcdBufferSize = %u, bytesFlushed = %u, color = %u", lcdBufferSize, bytesFlushed, colors[idx]);
