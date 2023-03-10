@@ -2,6 +2,8 @@
 
 #include <inttypes.h>
 #include <functional>
+#include <array>
+#include <utility>
 #include "pico/stdlib.h"
 #include "stdio.h"
 
@@ -22,7 +24,6 @@ class CLcdDriver
         TWO_BYTES = 1, 
     };
 public:
-
     CLcdDriver(spi_inst_t* spi, pinType csPin, pinType lcdRstPin, pinType lcdDcPin);
     ~CLcdDriver() = default;
     /* return: bytes flushed */
@@ -43,6 +44,7 @@ public:
 private:
     void LcdResetBlocking() const;
     void HandleSpiTransfer(const std::function<void()>& spiTransferFunction, const ESpiTransferType type, const ESpiTransferWidth width) const;
+    void SetUpRegisters() const;
     uint8_t ReadLcdId() const;
 
     spi_inst_t* const m_spi;
@@ -51,11 +53,15 @@ private:
     const pinType m_lcdDcPin;
     int16_t m_lcdId = -1;
 
-    static constexpr size_t s_bitsPerPixel = 12; /*TODO: confgure*/
+    static constexpr size_t s_bitsPerPixel = 16; /*TODO: change to 12*/
     static constexpr size_t s_pixelsAlongX = 240;
-    static constexpr size_t s_pixelsAlongY = 240;
+    static constexpr size_t s_pixelsAlongY = 320;
     static constexpr uint s_spiMaxReadSpeedHz = 6U * 1000U *  1000U;
     static constexpr uint8_t s_dummySpiWriteVal = 0x00;
 
+    static constexpr size_t s_initDeviceArrayCount = 60;
+    /* transactionType, value */
+    using InitEntryType = std::pair<ESpiTransferType, uint8_t>;
+    static const std::array<InitEntryType, s_initDeviceArrayCount> s_initDeviceArray;
 
 };
