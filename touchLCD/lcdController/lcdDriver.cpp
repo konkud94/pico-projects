@@ -14,7 +14,6 @@ CLcdDriver::CLcdDriver(spi_inst_t* spi, pinType csPin, pinType lcdRstPin, pinTyp
 
 size_t CLcdDriver::FlushData(const uint8_t* data, size_t len) const
 {
-    // TODO: check if works when not full lcd in buffer (regarding full window is set)
     static constexpr size_t lcdBitsCapacity = s_pixelsAlongX * s_pixelsAlongY * s_bitsPerPixel;
     static constexpr size_t lcdBytesCapacity = lcdBitsCapacity / 8;
     len = std::min(len, lcdBytesCapacity);
