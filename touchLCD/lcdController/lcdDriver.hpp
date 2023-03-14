@@ -59,7 +59,7 @@ private:
     static constexpr uint s_spiMaxReadSpeedHz = 6U * 1000U *  1000U;
     static constexpr uint8_t s_dummySpiWriteVal = 0x00;
 
-    static constexpr size_t s_initDeviceArrayCount = 60;
+    static constexpr size_t s_initDeviceArrayCount = 70;
     /* transactionType, value */
     using InitEntryType = std::pair<ESpiTransferType, uint8_t>;
     static const std::array<InitEntryType, s_initDeviceArrayCount> s_initDeviceArray;
