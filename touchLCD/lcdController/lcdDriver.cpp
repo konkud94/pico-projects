@@ -42,8 +42,8 @@ size_t CLcdDriver::FlushData(const uint8_t* data, size_t len) const
         }, ESpiTransferType::COMMAND, ESpiTransferWidth::ONE_BYTE);
     }
     HandleSpiTransfer([this, &len, data](){
-        len = 2 * spi_write16_blocking(m_spi, (const uint16_t*)data, len / 2);
-    }, ESpiTransferType::PARAMETER, ESpiTransferWidth::TWO_BYTES);
+        len = spi_write_blocking(m_spi, data, len);
+    }, ESpiTransferType::PARAMETER, ESpiTransferWidth::ONE_BYTE);
 
     spi_set_baudrate(m_spi, initialBaudRate);
     return len;
@@ -115,7 +115,7 @@ const std::array<CLcdDriver::InitEntryType, CLcdDriver::s_initDeviceArrayCount> 
     std::make_pair(ESpiTransferType::COMMAND, 0x36),
     std::make_pair(ESpiTransferType::PARAMETER, 0x00),
     std::make_pair(ESpiTransferType::COMMAND, 0x3a),
-    std::make_pair(ESpiTransferType::PARAMETER, 0x55),
+    std::make_pair(ESpiTransferType::PARAMETER, 0x03),
     std::make_pair(ESpiTransferType::COMMAND, 0xb2),
     std::make_pair(ESpiTransferType::PARAMETER, 0x0c),
     std::make_pair(ESpiTransferType::PARAMETER, 0x0c),

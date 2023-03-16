@@ -53,7 +53,7 @@ private:
     const pinType m_lcdDcPin;
     int16_t m_lcdId = -1;
 
-    static constexpr size_t s_bitsPerPixel = 16; /*TODO: change to 12*/
+    static constexpr size_t s_bitsPerPixel = 12;
     static constexpr size_t s_pixelsAlongX = 240;
     static constexpr size_t s_pixelsAlongY = 320;
     static constexpr uint s_spiMaxReadSpeedHz = 6U * 1000U *  1000U;
