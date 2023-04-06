@@ -99,6 +99,52 @@ int main()
 		CColorDescriptor(white, 255, 255, 255),
 	};
 
+
+	{
+		const auto& colorWhite = colors[4];
+		const uint16_t pixel12BitWhite = CGraphicsUtils::RGBToPixel12Bit(colorWhite.Red, colorWhite.Green, colorWhite.Blue);
+
+		const auto& colorGreen = colors[0];
+		const uint16_t pixel12BitGreen = CGraphicsUtils::RGBToPixel12Bit(colorGreen.Red, colorGreen.Green, colorGreen.Blue);
+
+		const size_t rectangleDiemnsionX = 60;
+		const size_t rectangleDiemnsionY = 60;
+		const size_t maxX = 239 - rectangleDiemnsionX;
+		const size_t maxY = 319 - rectangleDiemnsionY;
+		const size_t xyAdvanceRate = 1;
+		size_t currentX = 0;
+		size_t currentY = 0;
+		const uint32_t sleepMs = 10;
+		while(true)
+		{
+			if(currentX <= maxX && currentY <= maxY)
+			{
+				bitmap12->SetWholeBufferToColor(pixel12BitWhite);
+				for(size_t x = currentX; x < currentX + rectangleDiemnsionX; x++)
+				{
+					for(size_t y = currentY; y < currentY + rectangleDiemnsionY; y++)
+					{
+						bitmap12->SetPixelAt(x, y, pixel12BitGreen);
+					}
+				}
+				currentX += xyAdvanceRate;
+				currentY += xyAdvanceRate;
+				const uint32_t status = save_and_disable_interrupts();
+				lcdDriver->FlushData(bitmap12->GetBuffer(), lcdBufferSize);
+				restore_interrupts(status);
+				sleep_ms(sleepMs);
+			}
+			else
+			{
+				currentX = 0;
+				currentY = 0;
+			}
+		}
+	}
+
+
+
+
 	while(true)
 	{
 		for(size_t idx = 0; idx < 5; idx++)
