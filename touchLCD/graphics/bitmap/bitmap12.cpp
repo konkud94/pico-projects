@@ -2,13 +2,17 @@
 #include <stdio.h>
 
 CBitmap12::CBitmap12(const size_t dimensionX, const size_t dimensionY, uint8_t* const buffer)
-    :m_x(dimensionX), m_y(dimensionY), m_buffer(buffer)
+    :CColorBitmapInterface(dimensionX, dimensionY, buffer)
 {
     ;
 }
-/* TODO: check if x and y are within boundaries */
 void CBitmap12::SetPixelAt(const size_t x, const size_t y, uint16_t pixel, const EPixelType pixelType)
 {
+    const bool coordinatesOk = x < m_x && y < m_y;
+    if(!coordinatesOk)
+    {
+        return;
+    }
     if(pixelType == EPixelType::BitsPerPixel16)
     {
         pixel = CGraphicsUtils::Pixel16ToPixel12(pixel);
@@ -40,6 +44,12 @@ void CBitmap12::SetPixelAt(const size_t x, const size_t y, uint16_t pixel, const
 }
 uint16_t CBitmap12::GetPixelAt(const size_t x, const size_t y, const EPixelType pixelType) const
 {
+    const bool coordinatesOk = x < m_x && y < m_y;
+    if(!coordinatesOk)
+    {
+        /* black */
+        return 0;
+    }
     uint16_t pixel12;
     const size_t nibbleIdx = y * 3 * m_x + x * 3;
     const size_t byteIdx = nibbleIdx / 2;

@@ -10,6 +10,7 @@
 #include "lcdController/lcdDriver.hpp"
 #include "graphics/bitmap/bitmap12.hpp"
 #include "graphics/utils/utils.hpp"
+#include "graphics/bitmap/monochromaticBitmap.hpp"
 
 
 /*
@@ -46,7 +47,7 @@ int main()
 	const int16_t lcdId  = lcdDriver->GetLcdId();
 	printf("lcd id is = %d \n", lcdId);
 	static constexpr size_t lcdBufferSize = lcdDriver->GetBitsPerPixel() * lcdDriver->GetPixelsAlongX() * lcdDriver->GetPixelsAlongY() / (size_t)8 ;
-	CBitmap12* bitmap12 = nullptr;
+	CColorBitmapInterface* bitmap12 = nullptr;
 	{
 		uint8_t* const buffer = new uint8_t[lcdBufferSize];
 		if(buffer != nullptr)
@@ -61,7 +62,8 @@ int main()
 				;
 			}
 		}
-		const size_t expectedBuffersize = CBitmap12::GetRequiredBufferSizeBytes(lcdDriver->GetPixelsAlongX(), lcdDriver->GetPixelsAlongY());
+		bitmap12 = new CBitmap12(240, 320, buffer);
+		const size_t expectedBuffersize = bitmap12->GetRequiredBufferSizeBytes(lcdDriver->GetPixelsAlongX(), lcdDriver->GetPixelsAlongY());
 		if(lcdBufferSize < expectedBuffersize)
 		{
 			printf("lcdBufferSize < expectedBuffersize; lcdBufferSize = %u, expectedBuffersize = %u", lcdBufferSize, expectedBuffersize);
@@ -71,7 +73,6 @@ int main()
 				;
 			}
 		}
-		bitmap12 = new CBitmap12(240, 320, buffer);
 	}
 
 	const char* red = "RED";
@@ -119,12 +120,12 @@ int main()
 		{
 			if(currentX <= maxX && currentY <= maxY)
 			{
-				bitmap12->SetWholeBufferToColor(pixel12BitWhite);
+				bitmap12->SetWholeBufferToColor(pixel12BitWhite, CColorBitmapInterface::EPixelType::BitsPerPixel12);
 				for(size_t x = currentX; x < currentX + rectangleDiemnsionX; x++)
 				{
 					for(size_t y = currentY; y < currentY + rectangleDiemnsionY; y++)
 					{
-						bitmap12->SetPixelAt(x, y, pixel12BitGreen);
+						bitmap12->SetPixelAt(x, y, pixel12BitGreen, CColorBitmapInterface::EPixelType::BitsPerPixel12);
 					}
 				}
 				currentX += xyAdvanceRate;
@@ -151,7 +152,7 @@ int main()
 		{
 			const auto& color = colors[idx];
 			const uint16_t pixel12Bit = CGraphicsUtils::RGBToPixel12Bit(color.Red, color.Green, color.Blue);
-			bitmap12->SetWholeBufferToColor(pixel12Bit);
+			bitmap12->SetWholeBufferToColor(pixel12Bit, CColorBitmapInterface::EPixelType::BitsPerPixel12);
 			const uint32_t startMS = GetTimeMSSinceBoot();
 			const uint32_t status = save_and_disable_interrupts();
 			const size_t bytesFlushed = lcdDriver->FlushData(bitmap12->GetBuffer(), lcdBufferSize);

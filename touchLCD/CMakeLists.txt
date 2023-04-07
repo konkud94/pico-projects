@@ -6,6 +6,7 @@ add_executable(touchLCD
         graphics/utils/utils.cpp
         graphics/bitmap/bitmap12.cpp
         graphics/bitmap/bitmap16.cpp
+        graphics/bitmap/monochromaticBitmap.cpp
         )
 
 # enable usb output, disable uart output
