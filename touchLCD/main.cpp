@@ -22,11 +22,34 @@ uint32_t GetTimeMSSinceBoot()
 	const uint32_t msSinceBoot = to_ms_since_boot(absoluteTime);
 	return msSinceBoot;
 }
+
+
+void FillBitmapWithTriangle(CMonochromaticBitmap& bitmap)
+{
+	bitmap.ClearAllPixels();
+	const size_t bx = bitmap.GetDimensions().first;
+	const size_t by = bitmap.GetDimensions().second;
+	const float a = 2.0f * by / bx;
+	const float b = (float)by;
+	for(size_t y = 0; y < by; y++)
+	{
+		for(size_t x = 0; x < bx; x++)
+		{
+			const float y1 = -a * x + b;
+			const float y2 = a * x - b;
+			if(y >= y1 && y >= y2)
+			{
+				bitmap.SetPixelAt(x, y, true);
+			}
+		}
+	}
+}
+
 int main() 
 {
 	stdio_init_all();
 	spi_init(spi1, 4000000);
-	sleep_ms(1000 * 5);
+	//sleep_ms(1000 * 5);
 	for(const auto pin : {CPinDefinitions::ChipSelectLcdPin,
 		CPinDefinitions::ChipSelectTouchPadPin, CPinDefinitions::ChipSelectSDPin, CPinDefinitions::LcdBklPin,
 		CPinDefinitions::LcdDcPin, CPinDefinitions::LcdRstPin})
@@ -40,40 +63,16 @@ int main()
 	{
 		gpio_set_function(pin, GPIO_FUNC_SPI);
 	}
-	printf("spi intial baudrate is = %d \n", spi_get_baudrate(spi1));
 
 	CLcdDriver* const lcdDriver = new CLcdDriver(spi1, CPinDefinitions::ChipSelectLcdPin,
 		CPinDefinitions::LcdRstPin, CPinDefinitions::LcdDcPin);
-	const int16_t lcdId  = lcdDriver->GetLcdId();
-	printf("lcd id is = %d \n", lcdId);
 	static constexpr size_t lcdBufferSize = lcdDriver->GetBitsPerPixel() * lcdDriver->GetPixelsAlongX() * lcdDriver->GetPixelsAlongY() / (size_t)8 ;
-	CColorBitmapInterface* bitmap12 = nullptr;
+	uint8_t* const buffer = new uint8_t[lcdBufferSize];
+	if(buffer == nullptr)
 	{
-		uint8_t* const buffer = new uint8_t[lcdBufferSize];
-		if(buffer != nullptr)
-		{
-			printf("successfuly allocated %d bytes for lcdBuffer! \n", lcdBufferSize);
-		}
-		else
-		{
-			printf("failed to  allocate memory for lcdBuffer! \n");
-			while(true)
-			{
-				;
-			}
-		}
-		bitmap12 = new CBitmap12(240, 320, buffer);
-		const size_t expectedBuffersize = bitmap12->GetRequiredBufferSizeBytes(lcdDriver->GetPixelsAlongX(), lcdDriver->GetPixelsAlongY());
-		if(lcdBufferSize < expectedBuffersize)
-		{
-			printf("lcdBufferSize < expectedBuffersize; lcdBufferSize = %u, expectedBuffersize = %u", lcdBufferSize, expectedBuffersize);
-			assert(false);
-			while(true)
-			{
-				;
-			}
-		}
+		assert(false);
 	}
+	CColorBitmapInterface* const bitmap12 = new CBitmap12(240, 320, buffer);
 
 	const char* red = "RED";
 	const char* green = "GREEN";
@@ -104,30 +103,26 @@ int main()
 	{
 		const auto& colorWhite = colors[4];
 		const uint16_t pixel12BitWhite = CGraphicsUtils::RGBToPixel12Bit(colorWhite.Red, colorWhite.Green, colorWhite.Blue);
-
-		const auto& colorGreen = colors[0];
+		const auto& colorGreen = colors[1];
 		const uint16_t pixel12BitGreen = CGraphicsUtils::RGBToPixel12Bit(colorGreen.Red, colorGreen.Green, colorGreen.Blue);
 
 		const size_t rectangleDiemnsionX = 60;
 		const size_t rectangleDiemnsionY = 60;
-		const size_t maxX = 239 - rectangleDiemnsionX;
-		const size_t maxY = 319 - rectangleDiemnsionY;
+		const size_t maxX = 239;
+		const size_t maxY = 319;
 		const size_t xyAdvanceRate = 1;
 		size_t currentX = 0;
 		size_t currentY = 0;
 		const uint32_t sleepMs = 10;
+		CMonochromaticBitmap* const triangleBitMap = new CMonochromaticBitmap(rectangleDiemnsionX, rectangleDiemnsionY, new uint8_t[450]);
+		//triangleBitMap->SetAllPixels();
+		FillBitmapWithTriangle(*triangleBitMap);
 		while(true)
 		{
 			if(currentX <= maxX && currentY <= maxY)
 			{
 				bitmap12->SetWholeBufferToColor(pixel12BitWhite, CColorBitmapInterface::EPixelType::BitsPerPixel12);
-				for(size_t x = currentX; x < currentX + rectangleDiemnsionX; x++)
-				{
-					for(size_t y = currentY; y < currentY + rectangleDiemnsionY; y++)
-					{
-						bitmap12->SetPixelAt(x, y, pixel12BitGreen, CColorBitmapInterface::EPixelType::BitsPerPixel12);
-					}
-				}
+				bitmap12->PutMonoBitmapAt(currentX, currentY, *triangleBitMap, pixel12BitGreen, pixel12BitWhite, CColorBitmapInterface::EPixelType::BitsPerPixel12);
 				currentX += xyAdvanceRate;
 				currentY += xyAdvanceRate;
 				const uint32_t status = save_and_disable_interrupts();
@@ -143,41 +138,5 @@ int main()
 		}
 	}
 
-
-
-
-	while(true)
-	{
-		for(size_t idx = 0; idx < 5; idx++)
-		{
-			const auto& color = colors[idx];
-			const uint16_t pixel12Bit = CGraphicsUtils::RGBToPixel12Bit(color.Red, color.Green, color.Blue);
-			bitmap12->SetWholeBufferToColor(pixel12Bit, CColorBitmapInterface::EPixelType::BitsPerPixel12);
-			const uint32_t startMS = GetTimeMSSinceBoot();
-			const uint32_t status = save_and_disable_interrupts();
-			const size_t bytesFlushed = lcdDriver->FlushData(bitmap12->GetBuffer(), lcdBufferSize);
-			restore_interrupts(status);
-			const uint32_t tookMS = GetTimeMSSinceBoot() - startMS;
-			printf("FlushData took %u [ms]\n", tookMS);
-			if(lcdBufferSize != bytesFlushed)
-			{
-				printf("Error: lcdBufferSize = %u, bytesFlushed = %u, color = %s", lcdBufferSize, bytesFlushed, color.Name);
-				while(true)
-				{
-					;
-				}
-			}
-			printf("color = %s \n", color.Name);
-			sleep_ms(2000);
-		}
-	}
-
-	printf("spi baudrate is = %d \n", spi_get_baudrate(spi1));
-	while(1)
-	{
-		const auto xyPair = CTouchController::GetRawAdcXY(CPinDefinitions::ChipSelectTouchPadPin, spi1);
-		printf("x = %u, y = %u \n", xyPair.first, xyPair.second);
-		sleep_ms(1000);
-	}
 	return 0;
 }

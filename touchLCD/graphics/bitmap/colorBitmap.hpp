@@ -25,6 +25,7 @@ public:
     virtual void SetPixelAt(const size_t x, const size_t y, uint16_t pixel, const EPixelType pixelType) = 0;
     virtual uint16_t GetPixelAt(const size_t x, const size_t y, const EPixelType pixelType) const = 0;
     virtual void SetWholeBufferToColor(uint16_t pixel, const EPixelType pixelType) = 0;
-    // virtual void PutColorBitmapAt(const size_t x, const size_t y, const CColorBitmapInterface& bitmap) = 0;
-    // virtual void PutMonoBitmapAt(const size_t x, const size_t y, const CMonochromaticBitmap& bitmap) = 0;
+    virtual void PutColorBitmapAt(const size_t x, const size_t y, const CColorBitmapInterface& bitmap) = 0;
+    virtual void PutMonoBitmapAt(const size_t x, const size_t y, const CMonochromaticBitmap& bitmap, uint16_t pixelColor,
+        uint16_t backgroundColor, const EPixelType pixelType) = 0;
 };

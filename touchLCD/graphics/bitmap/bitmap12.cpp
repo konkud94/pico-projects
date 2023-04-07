@@ -1,5 +1,6 @@
 #include "bitmap12.hpp"
 #include <stdio.h>
+#include "monochromaticBitmap.hpp"
 
 CBitmap12::CBitmap12(const size_t dimensionX, const size_t dimensionY, uint8_t* const buffer)
     :CColorBitmapInterface(dimensionX, dimensionY, buffer)
@@ -93,4 +94,45 @@ void CBitmap12::SetWholeBufferToColor(uint16_t pixel, const EPixelType pixelType
 		m_buffer[idx] = pattern[patternIdx];
 	}
 
+}
+void CBitmap12::PutColorBitmapAt(const size_t x, const size_t y, const CColorBitmapInterface& bitmap)
+{
+    const size_t xb = bitmap.GetDimensions().first;
+    const size_t yb = bitmap.GetDimensions().second;
+    size_t destinationY = y;
+    size_t sourceY = 0;
+    for(; destinationY < m_y && sourceY < yb; destinationY++, sourceY++)
+    {
+        size_t destinationX = x;
+        size_t sourceX = 0;
+        for(; destinationX < m_x && sourceX < xb; destinationX++, sourceX++)
+        {
+            const uint16_t pixel12 = bitmap.GetPixelAt(sourceX, sourceY, EPixelType::BitsPerPixel12);
+            SetPixelAt(destinationX, destinationY, pixel12, EPixelType::BitsPerPixel12);
+        }
+    }
+}
+void CBitmap12::PutMonoBitmapAt(const size_t x, const size_t y, const CMonochromaticBitmap& bitmap, uint16_t pixelColor,
+        uint16_t backgroundColor, const EPixelType pixelType)
+{
+    if(pixelType == EPixelType::BitsPerPixel16)
+    {
+        pixelColor = CGraphicsUtils::Pixel16ToPixel12(pixelColor);
+        backgroundColor = CGraphicsUtils::Pixel16ToPixel12(backgroundColor);
+    }
+    const size_t xb = bitmap.GetDimensions().first;
+    const size_t yb = bitmap.GetDimensions().second;
+    size_t destinationY = y;
+    size_t sourceY = 0;
+    for(; destinationY < m_y && sourceY < yb; destinationY++, sourceY++)
+    {
+        size_t destinationX = x;
+        size_t sourceX = 0;
+        for(; destinationX < m_x && sourceX < xb; destinationX++, sourceX++)
+        {
+            const bool pixelMono = bitmap.GetPixelAt(sourceX, sourceY);
+            const uint16_t pixel12 = pixelMono? pixelColor : backgroundColor;
+            SetPixelAt(destinationX, destinationY, pixel12, EPixelType::BitsPerPixel12);
+        }
+    }
 }
