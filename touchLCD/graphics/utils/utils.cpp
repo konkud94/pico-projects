@@ -1,4 +1,5 @@
 #include "utils.hpp"
+#include "../bitmap/monochromaticBitmap.hpp"
 uint16_t CGraphicsUtils::Pixel16ToPixel12(uint16_t pixel16)
 {
     static constexpr uint16_t maskRed = 0b1111000000000000;
@@ -45,3 +46,41 @@ size_t CGraphicsUtils::GetRequiredBufferSizeBytes(const size_t dimensionX, const
     requiredSizeBits += 8 - modulo8;
     return requiredSizeBits / 8;
 }
+void CBitmapUtils::FillBitmapWithTriangle(CMonochromaticBitmap& bitmap)
+{
+	bitmap.ClearAllPixels();
+	const size_t bx = bitmap.GetDimensions().first;
+	const size_t by = bitmap.GetDimensions().second;
+	const float a = 2.0f * by / bx;
+	const float b = (float)by;
+	for(size_t y = 0; y < by; y++)
+	{
+		for(size_t x = 0; x < bx; x++)
+		{
+			const float y1 = -a * x + b;
+			const float y2 = a * x - b;
+			if(y >= y1 && y >= y2)
+			{
+				bitmap.SetPixelAt(x, y, true);
+			}
+		}
+	}
+}
+const CBankOfColors::CColorDescriptor& CBankOfColors::GetColor(const CBankOfColors::EColorName name)
+{
+    for(const auto& descriptor : colors)
+    {
+        if(descriptor.Name == name)
+        {
+            return descriptor;
+        }
+    }
+    return colors[0];
+}
+const std::array<CBankOfColors::CColorDescriptor,  (size_t)CBankOfColors::EColorName::METADATA_COUNT> CBankOfColors::colors = {
+    CBankOfColors::CColorDescriptor(CBankOfColors::EColorName::RED, 255, 0, 0),
+    CBankOfColors::CColorDescriptor(CBankOfColors::EColorName::GREEN, 0, 255, 0),
+    CBankOfColors::CColorDescriptor(CBankOfColors::EColorName::BLUE, 0, 0, 255),
+    CBankOfColors::CColorDescriptor(CBankOfColors::EColorName::BLACK, 0, 0, 0),
+    CBankOfColors::CColorDescriptor(CBankOfColors::EColorName::WHITE, 255, 255, 255),
+};

@@ -14,6 +14,7 @@
 #include "graphics/bitmap/bitmap12.hpp"
 #include "graphics/utils/utils.hpp"
 #include "graphics/bitmap/monochromaticBitmap.hpp"
+#include "graphics/layoutController/experimentalLayoutController.hpp"
 
 
 /*
@@ -25,34 +26,11 @@ uint32_t GetTimeMSSinceBoot()
 	const uint32_t msSinceBoot = to_ms_since_boot(absoluteTime);
 	return msSinceBoot;
 }
-
-
-void FillBitmapWithTriangle(CMonochromaticBitmap& bitmap)
-{
-	bitmap.ClearAllPixels();
-	const size_t bx = bitmap.GetDimensions().first;
-	const size_t by = bitmap.GetDimensions().second;
-	const float a = 2.0f * by / bx;
-	const float b = (float)by;
-	for(size_t y = 0; y < by; y++)
-	{
-		for(size_t x = 0; x < bx; x++)
-		{
-			const float y1 = -a * x + b;
-			const float y2 = a * x - b;
-			if(y >= y1 && y >= y2)
-			{
-				bitmap.SetPixelAt(x, y, true);
-			}
-		}
-	}
-}
-
 int main() 
 {
 	stdio_init_all();
 	spi_init(spi1, 4000000);
-	//sleep_ms(1000 * 5);
+	sleep_ms(5*1000);
 	for(const auto pin : {CPinDefinitions::ChipSelectLcdPin,
 		CPinDefinitions::ChipSelectTouchPadPin, CPinDefinitions::ChipSelectSDPin, CPinDefinitions::LcdBklPin,
 		CPinDefinitions::LcdDcPin, CPinDefinitions::LcdRstPin})
@@ -76,70 +54,16 @@ int main()
 		assert(false);
 	}
 	CColorBitmapInterface* const bitmap12 = new CBitmap12(240, 320, buffer);
+	CExperimentalLayoutController* const layoutCtrl = new CExperimentalLayoutController(bitmap12);
 
-	const char* red = "RED";
-	const char* green = "GREEN";
-	const char* blue = "BLUE";
-	const char* black = "BLACK"; 
-	const char* white = "WHITE";
-	class CColorDescriptor {
-	public:
-		CColorDescriptor(const char* name, uint8_t red, uint8_t green, uint8_t blue)
-		:	Name(name), Red(red), Green(green), Blue(blue)
-		{
-			;
-		}
-		const char* Name; 
-		const uint8_t Red;
-		const uint8_t Green;
-		const uint8_t Blue;
-	};
-	std::array<CColorDescriptor, 5> colors = {
-		CColorDescriptor(red, 255, 0, 0),
-		CColorDescriptor(green, 0, 255, 0),
-		CColorDescriptor(blue, 0, 0, 255),
-		CColorDescriptor(black, 0, 0, 0),
-		CColorDescriptor(white, 255, 255, 255),
-	};
-
-
+	while(true)
 	{
-		const auto& colorWhite = colors[3];
-		const uint16_t pixel12BitWhite = CGraphicsUtils::RGBToPixel12Bit(colorWhite.Red, colorWhite.Green, colorWhite.Blue);
-		const auto& colorGreen = colors[0];
-		const uint16_t pixel12BitGreen = CGraphicsUtils::RGBToPixel12Bit(colorGreen.Red, colorGreen.Green, colorGreen.Blue);
-
-		const size_t rectangleDiemnsionX = 100;
-		const size_t rectangleDiemnsionY = 100;
-		const size_t maxX = 239;
-		const size_t maxY = 319;
-		const size_t xyAdvanceRate = 1;
-		size_t currentX = 0;
-		size_t currentY = 0;
-		const uint32_t sleepMs = 10;
-		const size_t triangleBufferSize = CGraphicsUtils::GetRequiredBufferSizeBytes(rectangleDiemnsionX, rectangleDiemnsionY, 1);
-		CMonochromaticBitmap* const triangleBitMap = new CMonochromaticBitmap(rectangleDiemnsionX, rectangleDiemnsionY, new uint8_t[triangleBufferSize]);
-		//triangleBitMap->SetAllPixels();
-		FillBitmapWithTriangle(*triangleBitMap);
-		while(true)
-		{
-			if(currentX <= maxX && currentY <= maxY)
-			{
-				bitmap12->SetWholeBufferToColor(pixel12BitWhite, CColorBitmapInterface::EPixelType::BitsPerPixel12);
-				bitmap12->PutMonoBitmapAt(currentX, currentY, *triangleBitMap, pixel12BitGreen, pixel12BitWhite, CColorBitmapInterface::EPixelType::BitsPerPixel12);
-				currentX += xyAdvanceRate;
-				currentY += xyAdvanceRate;
-				const uint32_t status = save_and_disable_interrupts();
-				lcdDriver->FlushData(bitmap12->GetBuffer(), lcdBufferSize);
-				restore_interrupts(status);
-				sleep_ms(sleepMs);
-			}
-			else
-			{
-				currentX = 0;
-				currentY = 0;
-			}
-		}
+		const uint32_t sleepMS = 20;
+		layoutCtrl->MoveTriangle();
+		const uint32_t status = save_and_disable_interrupts();
+		lcdDriver->FlushData(layoutCtrl->GetBuffer(), lcdBufferSize);
+		restore_interrupts(status);
+		sleep_ms(sleepMS);
 	}
 
 	return 0;
