@@ -1,5 +1,4 @@
 #include "utils.hpp"
-
 uint16_t CGraphicsUtils::Pixel16ToPixel12(uint16_t pixel16)
 {
     static constexpr uint16_t maskRed = 0b1111000000000000;
@@ -34,4 +33,15 @@ uint16_t CGraphicsUtils::RGBToPixel16Bit(uint8_t red, uint8_t green, uint8_t blu
 {
     const uint16_t pixel12Bit = RGBToPixel12Bit(red, green, blue);
     return Pixel12ToPixel16(pixel12Bit);
+}
+size_t CGraphicsUtils::GetRequiredBufferSizeBytes(const size_t dimensionX, const size_t dimensionY, const size_t bitsPerPixel)
+{
+    size_t requiredSizeBits = dimensionX * dimensionY * bitsPerPixel;
+    const size_t modulo8 = requiredSizeBits % 8;
+    if(modulo8 == 0)
+    {
+        return requiredSizeBits / 8;
+    }
+    requiredSizeBits += 8 - modulo8;
+    return requiredSizeBits / 8;
 }

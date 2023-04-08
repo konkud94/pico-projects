@@ -101,20 +101,21 @@ int main()
 
 
 	{
-		const auto& colorWhite = colors[4];
+		const auto& colorWhite = colors[3];
 		const uint16_t pixel12BitWhite = CGraphicsUtils::RGBToPixel12Bit(colorWhite.Red, colorWhite.Green, colorWhite.Blue);
-		const auto& colorGreen = colors[1];
+		const auto& colorGreen = colors[0];
 		const uint16_t pixel12BitGreen = CGraphicsUtils::RGBToPixel12Bit(colorGreen.Red, colorGreen.Green, colorGreen.Blue);
 
-		const size_t rectangleDiemnsionX = 60;
-		const size_t rectangleDiemnsionY = 60;
+		const size_t rectangleDiemnsionX = 100;
+		const size_t rectangleDiemnsionY = 100;
 		const size_t maxX = 239;
 		const size_t maxY = 319;
 		const size_t xyAdvanceRate = 1;
 		size_t currentX = 0;
 		size_t currentY = 0;
 		const uint32_t sleepMs = 10;
-		CMonochromaticBitmap* const triangleBitMap = new CMonochromaticBitmap(rectangleDiemnsionX, rectangleDiemnsionY, new uint8_t[450]);
+		const size_t triangleBufferSize = CGraphicsUtils::GetRequiredBufferSizeBytes(rectangleDiemnsionX, rectangleDiemnsionY, 1);
+		CMonochromaticBitmap* const triangleBitMap = new CMonochromaticBitmap(rectangleDiemnsionX, rectangleDiemnsionY, new uint8_t[triangleBufferSize]);
 		//triangleBitMap->SetAllPixels();
 		FillBitmapWithTriangle(*triangleBitMap);
 		while(true)
