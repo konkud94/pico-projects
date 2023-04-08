@@ -13,22 +13,6 @@ CSpiDmaDriver::CSpiDmaDriver(spi_inst_t* spi, const pinType mosi, const pinType 
     gpio_set_function(mosi, GPIO_FUNC_SPI);
     gpio_set_function(miso, GPIO_FUNC_SPI);
     gpio_set_function(sck, GPIO_FUNC_SPI);
-
-    /* preconfigure dma */
-    {
-        dma_channel_config config = dma_channel_get_default_config(m_dmaChannelTx);
-        channel_config_set_transfer_data_size(&config, DMA_SIZE_8);
-        channel_config_set_dreq(&config, spi_get_dreq(m_spi, true));
-        dma_channel_set_config(m_dmaChannelTx, &config, false);
-    }
-    {
-        dma_channel_config config = dma_channel_get_default_config(m_dmaChannelRx);
-        channel_config_set_transfer_data_size(&config, DMA_SIZE_8);
-        channel_config_set_dreq(&config, spi_get_dreq(m_spi, false));
-        channel_config_set_read_increment(&config, false);
-        channel_config_set_write_increment(&config, true);
-        dma_channel_set_config(m_dmaChannelRx, &config, false);
-    }
 }
 
 bool CSpiDmaDriver::PerformTransferBlocking(const CTransferPacket& packet) const
@@ -61,6 +45,12 @@ bool CSpiDmaDriver::PerformTransferBlocking(const CTransferPacket& packet) const
     if(readTransfer)
     {
         dma_channel_config config = dma_channel_get_default_config(m_dmaChannelRx);
+        channel_config_set_transfer_data_size(&config, DMA_SIZE_8);
+        channel_config_set_dreq(&config, spi_get_dreq(m_spi, false));
+        channel_config_set_read_increment(&config, false);
+        channel_config_set_write_increment(&config, true);
+        channel_config_set_transfer_data_size(&config, DMA_SIZE_8);
+        channel_config_set_dreq(&config, spi_get_dreq(m_spi, true));
         dma_channel_configure(m_dmaChannelRx, &config,
                     packet.Destination,
                     &spi_get_hw(m_spi)->dr,

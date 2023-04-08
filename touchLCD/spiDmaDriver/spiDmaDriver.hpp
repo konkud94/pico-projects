@@ -21,7 +21,6 @@ public:
     };
     struct CTransferPacket
     {
-        //typedef void (*CallbackType)(void*);
         using CallbackType = std::function<void(void*)>;
         CTransferPacket(ETransferType transferType, unsigned int spiBaudrate, size_t transferLengthBytes, const uint8_t* source, 
             uint8_t* destination, CallbackType beforeTransferCallback, void* beforeCallbackArg, CallbackType afterTransferCallback, void* afterCallbackArg)
