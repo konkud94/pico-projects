@@ -6,9 +6,8 @@
 #include <utility>
 #include "pico/stdlib.h"
 #include "stdio.h"
+#include "../spiDmaDriver/spiDmaDriver.hpp"
 
- /* sort of forward declaration, seems like in C it is called opaque type */
-typedef struct spi_inst spi_inst_t;
 
 class CLcdDriver
 {
@@ -24,7 +23,7 @@ class CLcdDriver
         TWO_BYTES = 1, 
     };
 public:
-    CLcdDriver(spi_inst_t* spi, pinType csPin, pinType lcdRstPin, pinType lcdDcPin);
+    CLcdDriver(CSpiDmaDriver* spi, pinType csPin, pinType lcdRstPin, pinType lcdDcPin);
     ~CLcdDriver() = default;
     /* return: bytes flushed */
     size_t FlushData(const uint8_t* data, size_t len) const;
@@ -47,7 +46,7 @@ private:
     void SetUpRegisters() const;
     uint8_t ReadLcdId() const;
 
-    spi_inst_t* const m_spi;
+    CSpiDmaDriver* const m_spi;
     const pinType m_csPin;
     const pinType m_lcdRstPin;
     const pinType m_lcdDcPin;

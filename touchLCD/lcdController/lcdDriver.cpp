@@ -2,8 +2,9 @@
 #include <assert.h>
 #include "lcdDriver.hpp"
 #include "hardware/spi.h"
+#include <stdio.h>
 
-CLcdDriver::CLcdDriver(spi_inst_t* spi, pinType csPin, pinType lcdRstPin, pinType lcdDcPin)
+CLcdDriver::CLcdDriver(CSpiDmaDriver* spi, pinType csPin, pinType lcdRstPin, pinType lcdDcPin)
     : m_spi(spi), m_csPin(csPin), m_lcdRstPin(lcdRstPin), m_lcdDcPin(lcdDcPin)
 {
     LcdResetBlocking();
@@ -14,6 +15,7 @@ CLcdDriver::CLcdDriver(spi_inst_t* spi, pinType csPin, pinType lcdRstPin, pinTyp
 
 size_t CLcdDriver::FlushData(const uint8_t* data, size_t len) const
 {
+    printf("CLcdDriver::FlushData \n");
     static constexpr size_t lcdBitsCapacity = s_pixelsAlongX * s_pixelsAlongY * s_bitsPerPixel;
     static constexpr size_t lcdBytesCapacity = lcdBitsCapacity / 8;
     len = std::min(len, lcdBytesCapacity);
@@ -28,24 +30,23 @@ size_t CLcdDriver::FlushData(const uint8_t* data, size_t len) const
         assert(false);
         len--;
     }
-    const uint initialBaudRate = spi_get_baudrate(m_spi);
-    {
-        [[maybe_unused]] static constexpr uint debugSpeedHz = 100'000; 
-        /* should settle around 62.5 MHz */
-        spi_set_baudrate(m_spi, std::numeric_limits<uint>::max());
-    }
     {
         /* set frame pointers to x = 0, y = 0*/
         static constexpr uint8_t command = 0x2c;
         HandleSpiTransfer([this](){
-            spi_write_blocking(m_spi, &command, 1);
+            const CSpiDmaDriver::CTransferPacket packet(CSpiDmaDriver::ETransferType::WRITE, std::numeric_limits<uint>::max(), 1, &command, nullptr, nullptr,
+                nullptr, nullptr, nullptr);
+            m_spi->PerformTransferBlocking(packet);
         }, ESpiTransferType::COMMAND, ESpiTransferWidth::ONE_BYTE);
     }
     HandleSpiTransfer([this, &len, data](){
-        len = spi_write_blocking(m_spi, data, len);
+        const CSpiDmaDriver::CTransferPacket packet(CSpiDmaDriver::ETransferType::WRITE, std::numeric_limits<uint>::max(), len, data, nullptr, nullptr,
+            nullptr, nullptr, nullptr);
+        m_spi->PerformTransferBlocking(packet);
     }, ESpiTransferType::PARAMETER, ESpiTransferWidth::ONE_BYTE);
 
-    spi_set_baudrate(m_spi, initialBaudRate);
+    //spi_set_baudrate(m_spi, initialBaudRate);
+    printf("CLcdDriver::FlushData ENDED \n");
     return len;
 }
 int16_t CLcdDriver::GetLcdId() const
@@ -64,26 +65,31 @@ void CLcdDriver::LcdResetBlocking() const
 }
 void CLcdDriver::HandleSpiTransfer(const std::function<void()>& spiTransferFunction, const ESpiTransferType type, const ESpiTransferWidth width) const
 {
+    printf("CLcdDriver::HandleSpiTransfer \n");
     gpio_put(m_csPin, false);
     /* assume 8 bit is initial and normal spi mode */
     const bool reconfigureSpi = width == ESpiTransferWidth::TWO_BYTES;
+    (void)reconfigureSpi;
     const bool dcPinDesiredState = type == ESpiTransferType::PARAMETER;
     const bool dcPinInitialState = gpio_get(m_lcdDcPin);
     gpio_put(m_lcdDcPin, dcPinDesiredState);
-    if(reconfigureSpi)
-    {
-        spi_set_format(m_spi, 16, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
-    }
+    // if(reconfigureSpi)
+    // {
+    //     spi_set_format(m_spi, 16, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+    // }
     spiTransferFunction();
-    spi_set_format(m_spi, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+    //spi_set_format(m_spi, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
     gpio_put(m_lcdDcPin, dcPinInitialState);
     gpio_put(m_csPin, true);
+    printf("CLcdDriver::HandleSpiTransfer ENDED \n");
 }
 void CLcdDriver::SetUpRegisters() const
 {
     uint8_t valueToSend = 0;
     const std::function<void()> spiTransferFunction = [this, &valueToSend](){
-        spi_write_blocking(m_spi, &valueToSend, 1);
+        const CSpiDmaDriver::CTransferPacket packet(CSpiDmaDriver::ETransferType::WRITE, 4'000'000, 1, &valueToSend, nullptr, nullptr,
+            nullptr, nullptr, nullptr);
+        m_spi->PerformTransferBlocking(packet);
     };
     valueToSend = 0x11;
     HandleSpiTransfer(spiTransferFunction, ESpiTransferType::COMMAND, ESpiTransferWidth::ONE_BYTE);
@@ -101,11 +107,9 @@ uint8_t CLcdDriver::ReadLcdId() const
     HandleSpiTransfer([this, &idVal](){
         uint8_t receivedData[2];
         const uint8_t payload[2] = {reg, s_dummySpiWriteVal};
-        const uint initialBaudRate = spi_get_baudrate(m_spi);
-        const uint desiredBaudrate = std::min(initialBaudRate, s_spiMaxReadSpeedHz);
-        spi_set_baudrate(m_spi, desiredBaudrate);
-        spi_write_read_blocking(m_spi, payload, receivedData, 2);
-        spi_set_baudrate(m_spi, initialBaudRate);
+        const CSpiDmaDriver::CTransferPacket packet(CSpiDmaDriver::ETransferType::READnWRITE, s_spiMaxReadSpeedHz, 2, payload, receivedData, nullptr,
+            nullptr, nullptr, nullptr);
+        m_spi->PerformTransferBlocking(packet);
         idVal = receivedData[1];
     }, ESpiTransferType::COMMAND, ESpiTransferWidth::ONE_BYTE);
     return idVal;
