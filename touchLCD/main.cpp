@@ -2,6 +2,9 @@
 #include <initializer_list>
 #include <utility>
 #include <array>
+#include "FreeRTOSConfig.h"
+#include "FreeRTOS.h"
+#include "task.h"
 #include "pico/stdlib.h"
 #include "pico/sync.h"
 #include "hardware/spi.h"
