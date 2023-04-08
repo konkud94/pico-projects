@@ -19,17 +19,6 @@ public:
         READ = 1,
         READnWRITE = 2,
     };
-    const char* GetTypeAsString(ETransferType type) const
-    {
-        switch(type)
-        {
-            case ETransferType::WRITE:
-                return "WRITE";
-            case ETransferType::READ:
-                return "READ";
-            return "READnWRITE";
-        }
-    }
     struct CTransferPacket
     {
         //typedef void (*CallbackType)(void*);

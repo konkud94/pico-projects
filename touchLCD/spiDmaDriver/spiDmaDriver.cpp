@@ -4,8 +4,6 @@
 #include "hardware/gpio.h"
 #include "FreeRTOS.h"
 #include "task.h"
-#include "pico/stdlib.h"
-#include <stdio.h>
 
 CSpiDmaDriver::CSpiDmaDriver(spi_inst_t* spi, const pinType mosi, const pinType miso, const pinType sck, const unsigned int dmaChannelTx,
     const unsigned int dmaChannelRx)
@@ -18,26 +16,23 @@ CSpiDmaDriver::CSpiDmaDriver(spi_inst_t* spi, const pinType mosi, const pinType 
 
     /* preconfigure dma */
     {
-        // dma_channel_config config = dma_channel_get_default_config(m_dmaChannelTx);
-        // channel_config_set_transfer_data_size(&config, DMA_SIZE_8);
-        // channel_config_set_dreq(&config, spi_get_dreq(m_spi, true));
-        // dma_channel_set_config(m_dmaChannelTx, &config, false);
+        dma_channel_config config = dma_channel_get_default_config(m_dmaChannelTx);
+        channel_config_set_transfer_data_size(&config, DMA_SIZE_8);
+        channel_config_set_dreq(&config, spi_get_dreq(m_spi, true));
+        dma_channel_set_config(m_dmaChannelTx, &config, false);
     }
     {
-        // dma_channel_config config = dma_channel_get_default_config(m_dmaChannelRx);
-        // channel_config_set_transfer_data_size(&config, DMA_SIZE_8);
-        // channel_config_set_dreq(&config, spi_get_dreq(m_spi, false));
-        // channel_config_set_read_increment(&config, false);
-        // channel_config_set_write_increment(&config, true);
-        // dma_channel_set_config(m_dmaChannelRx, &config, false);
+        dma_channel_config config = dma_channel_get_default_config(m_dmaChannelRx);
+        channel_config_set_transfer_data_size(&config, DMA_SIZE_8);
+        channel_config_set_dreq(&config, spi_get_dreq(m_spi, false));
+        channel_config_set_read_increment(&config, false);
+        channel_config_set_write_increment(&config, true);
+        dma_channel_set_config(m_dmaChannelRx, &config, false);
     }
 }
 
 bool CSpiDmaDriver::PerformTransferBlocking(const CTransferPacket& packet) const
 {
-
-    const char* typeAsStr = GetTypeAsString(packet.TransferType);
-    printf("CSpiDmaDriver::PerformTransferBlocking; type = %s, lenBytes = %u\n",typeAsStr, packet.TransferLengthBytes);
     const bool writeTransfer = (packet.TransferType == ETransferType::WRITE || 
         packet.TransferType == ETransferType::READnWRITE ) && packet.Source != nullptr;
     const bool readTransfer = (packet.TransferType == ETransferType::READ || 
@@ -55,12 +50,7 @@ bool CSpiDmaDriver::PerformTransferBlocking(const CTransferPacket& packet) const
     uint32_t dmaChannelMask = 0;
     if(writeTransfer)
     {
-
         dma_channel_config config = dma_channel_get_default_config(m_dmaChannelTx);
-        channel_config_set_transfer_data_size(&config, DMA_SIZE_8);
-        channel_config_set_dreq(&config, spi_get_dreq(m_spi, true));
-
-        //dma_channel_config config = dma_channel_get_default_config(m_dmaChannelTx);
         dma_channel_configure(m_dmaChannelTx, &config,
                             &spi_get_hw(m_spi)->dr,
                             packet.Source,
@@ -71,12 +61,6 @@ bool CSpiDmaDriver::PerformTransferBlocking(const CTransferPacket& packet) const
     if(readTransfer)
     {
         dma_channel_config config = dma_channel_get_default_config(m_dmaChannelRx);
-        channel_config_set_transfer_data_size(&config, DMA_SIZE_8);
-        channel_config_set_dreq(&config, spi_get_dreq(m_spi, false));
-        channel_config_set_read_increment(&config, false);
-        channel_config_set_write_increment(&config, true);
-        //dma_channel_set_config(m_dmaChannelRx, &config, false);
-        //dma_channel_config config = dma_channel_get_default_config(m_dmaChannelRx);
         dma_channel_configure(m_dmaChannelRx, &config,
                     packet.Destination,
                     &spi_get_hw(m_spi)->dr,
@@ -88,13 +72,11 @@ bool CSpiDmaDriver::PerformTransferBlocking(const CTransferPacket& packet) const
     while(dma_channel_is_busy(m_dmaChannelRx) || dma_channel_is_busy(m_dmaChannelTx))
     {
         static constexpr unsigned int sleepMS = 10;
-        //vTaskDelay(sleepMS / portTICK_PERIOD_MS);
-        sleep_ms(sleepMS);
+        vTaskDelay(sleepMS / portTICK_PERIOD_MS);
     }
     if(packet.AfterTransferCallback)
     {
         packet.AfterTransferCallback(packet.AfterCallbackArg);   
     }
-    printf("CSpiDmaDriver::PerformTransferBlocking ENDED \n");
     return true;
 }

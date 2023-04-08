@@ -14,8 +14,7 @@
 #include "graphics/bitmap/bitmap12.hpp"
 #include "graphics/utils/utils.hpp"
 #include "graphics/bitmap/monochromaticBitmap.hpp"
-#include "spiDmaDriver/spiDmaDriver.hpp"
-#include "hardware/dma.h"
+
 
 /*
 	important: max refresh rate is around 55 times per second!
@@ -52,7 +51,8 @@ void FillBitmapWithTriangle(CMonochromaticBitmap& bitmap)
 int main() 
 {
 	stdio_init_all();
-	sleep_ms(5 * 1000);
+	spi_init(spi1, 4000000);
+	//sleep_ms(1000 * 5);
 	for(const auto pin : {CPinDefinitions::ChipSelectLcdPin,
 		CPinDefinitions::ChipSelectTouchPadPin, CPinDefinitions::ChipSelectSDPin, CPinDefinitions::LcdBklPin,
 		CPinDefinitions::LcdDcPin, CPinDefinitions::LcdRstPin})
@@ -61,35 +61,18 @@ int main()
 		gpio_set_dir(pin, GPIO_OUT);
 		gpio_put(pin, true);
 	}
-
-	const int dmaChannel1 = dma_claim_unused_channel(false);
-	const int dmaChannel2 = dma_claim_unused_channel(false);
-	if(dmaChannel1 < 0 || dmaChannel2 < 0)
+	for(const auto pin : {CPinDefinitions::SpiMosiPin,
+		CPinDefinitions::SpiMisoPin, CPinDefinitions::SpiClkPin})
 	{
-		printf("dma_claim_unused_channel failed; dmaChannel1 = %d, dmaChannel2 = %d \n", dmaChannel1, dmaChannel2);
-		while(1)
-		{
-			;
-		}
-	}
-	else 
-	{
-		printf("dmaChannel1 = %d, dmaChannel2 = %d \n", dmaChannel1, dmaChannel2);
+		gpio_set_function(pin, GPIO_FUNC_SPI);
 	}
 
-	CSpiDmaDriver* const spi1DmaDriver = new CSpiDmaDriver(spi1, CPinDefinitions::SpiMosiPin, CPinDefinitions::SpiMisoPin,
-		CPinDefinitions::SpiClkPin, dmaChannel1, dmaChannel2);
-
-	CLcdDriver* const lcdDriver = new CLcdDriver(spi1DmaDriver, CPinDefinitions::ChipSelectLcdPin,
+	CLcdDriver* const lcdDriver = new CLcdDriver(spi1, CPinDefinitions::ChipSelectLcdPin,
 		CPinDefinitions::LcdRstPin, CPinDefinitions::LcdDcPin);
-	printf("lcdID = %u \n", lcdDriver->GetLcdId());
 	static constexpr size_t lcdBufferSize = lcdDriver->GetBitsPerPixel() * lcdDriver->GetPixelsAlongX() * lcdDriver->GetPixelsAlongY() / (size_t)8 ;
-	printf("about to allocate lcdBuffer, lcdBufferSize = %u \n", lcdBufferSize);
 	uint8_t* const buffer = new uint8_t[lcdBufferSize];
-	printf("allocated lcdBuffer \n");
 	if(buffer == nullptr)
 	{
-		printf("buffer == nullptr \n");
 		assert(false);
 	}
 	CColorBitmapInterface* const bitmap12 = new CBitmap12(240, 320, buffer);
@@ -121,7 +104,7 @@ int main()
 
 
 	{
-		const auto& colorWhite = colors[1];
+		const auto& colorWhite = colors[3];
 		const uint16_t pixel12BitWhite = CGraphicsUtils::RGBToPixel12Bit(colorWhite.Red, colorWhite.Green, colorWhite.Blue);
 		const auto& colorGreen = colors[0];
 		const uint16_t pixel12BitGreen = CGraphicsUtils::RGBToPixel12Bit(colorGreen.Red, colorGreen.Green, colorGreen.Blue);
@@ -146,9 +129,9 @@ int main()
 				bitmap12->PutMonoBitmapAt(currentX, currentY, *triangleBitMap, pixel12BitGreen, pixel12BitWhite, CColorBitmapInterface::EPixelType::BitsPerPixel12);
 				currentX += xyAdvanceRate;
 				currentY += xyAdvanceRate;
-				//const uint32_t status = save_and_disable_interrupts();
+				const uint32_t status = save_and_disable_interrupts();
 				lcdDriver->FlushData(bitmap12->GetBuffer(), lcdBufferSize);
-				//restore_interrupts(status);
+				restore_interrupts(status);
 				sleep_ms(sleepMs);
 			}
 			else
