@@ -88,6 +88,7 @@ void CLcdDriver::HandleSpiTransfer(CTransferPacket& transferPacket, const ESpiTr
     {
         [[maybe_unused]] const bool ret = xSemaphoreTake(m_transferMutex, portMAX_DELAY);
         assert(ret == pdTrue);
+        xSemaphoreGive(m_transferMutex);
     }
 }
 void CLcdDriver::SetUpRegisters() const

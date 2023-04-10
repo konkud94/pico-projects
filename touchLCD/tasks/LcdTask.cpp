@@ -9,7 +9,11 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
-
+#include <algorithm>
+#include <inttypes.h>
+/*
+	important: max LCD refresh rate is around 55 times per second!
+*/
 namespace FreeRtosTasks
 {
     void LcdTask(void* args)
@@ -27,11 +31,14 @@ namespace FreeRtosTasks
         CExperimentalLayoutController* const layoutCtrl = new CExperimentalLayoutController(bitmap12);
         while(true)
         {
-            static constexpr uint32_t sleepMS = 20;
+            static constexpr uint32_t refreshRateMS = 40;
+            static constexpr uint32_t refreshRateTicks = refreshRateMS / portTICK_PERIOD_MS;
+            const TickType_t startTicks = xTaskGetTickCount();
             layoutCtrl->MoveTriangle();
             lcdDriver->FlushData(layoutCtrl->GetBuffer(), lcdBufferSize);
-            vTaskDelay(sleepMS / portTICK_PERIOD_MS);
+            const TickType_t elapsedTicks = xTaskGetTickCount() - startTicks;
+            const TickType_t sleepForTicks = (TickType_t)std::max((int32_t)refreshRateTicks - (int32_t)elapsedTicks, (int32_t)0);
+            vTaskDelay(sleepForTicks);
         }
-
     }
 }

@@ -14,7 +14,6 @@ CSpiDmaDriver::CSpiDmaDriver(spi_inst_t* spi, const pinType mosi, const pinType 
     gpio_set_function(miso, GPIO_FUNC_SPI);
     gpio_set_function(sck, GPIO_FUNC_SPI);
 }
-
 bool CSpiDmaDriver::PerformTransferBlocking(const CTransferPacket& packet, const unsigned int sleepMS) const
 {
     const bool writeTransfer = (packet.TransferType == ETransferType::WRITE || 
@@ -29,12 +28,14 @@ bool CSpiDmaDriver::PerformTransferBlocking(const CTransferPacket& packet, const
     }
     if(packet.BeforeTransferCallback)
     {
-        packet.BeforeTransferCallback(packet.BeforeCallbackArg);
+        packet.BeforeTransferCallback(packet.BeforeCallbackArg);        
     }
     uint32_t dmaChannelMask = 0;
     if(writeTransfer)
     {
         dma_channel_config config = dma_channel_get_default_config(m_dmaChannelTx);
+        channel_config_set_transfer_data_size(&config, DMA_SIZE_8);
+        channel_config_set_dreq(&config, spi_get_dreq(m_spi, true));
         dma_channel_configure(m_dmaChannelTx, &config,
                             &spi_get_hw(m_spi)->dr,
                             packet.Source,
@@ -63,9 +64,15 @@ bool CSpiDmaDriver::PerformTransferBlocking(const CTransferPacket& packet, const
     {
         vTaskDelay(sleepMS / portTICK_PERIOD_MS);
     }
+    __compiler_memory_barrier();
+    /* spi will continue to consume data supplied by dma */
+    while(spi_is_busy(m_spi))
+    {
+        vTaskDelay(0);        
+    }
     if(packet.AfterTransferCallback)
     {
-        packet.AfterTransferCallback(packet.AfterCallbackArg);   
+        packet.AfterTransferCallback(packet.AfterCallbackArg);  
     }
     return true;
 }
