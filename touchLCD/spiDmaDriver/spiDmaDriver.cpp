@@ -15,7 +15,7 @@ CSpiDmaDriver::CSpiDmaDriver(spi_inst_t* spi, const pinType mosi, const pinType 
     gpio_set_function(sck, GPIO_FUNC_SPI);
 }
 
-bool CSpiDmaDriver::PerformTransferBlocking(const CTransferPacket& packet) const
+bool CSpiDmaDriver::PerformTransferBlocking(const CTransferPacket& packet, const unsigned int sleepMS) const
 {
     const bool writeTransfer = (packet.TransferType == ETransferType::WRITE || 
         packet.TransferType == ETransferType::READnWRITE ) && packet.Source != nullptr;
@@ -61,7 +61,6 @@ bool CSpiDmaDriver::PerformTransferBlocking(const CTransferPacket& packet) const
     dma_start_channel_mask(dmaChannelMask);
     while(dma_channel_is_busy(m_dmaChannelRx) || dma_channel_is_busy(m_dmaChannelTx))
     {
-        static constexpr unsigned int sleepMS = 10;
         vTaskDelay(sleepMS / portTICK_PERIOD_MS);
     }
     if(packet.AfterTransferCallback)

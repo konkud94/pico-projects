@@ -6,10 +6,11 @@
 #include <utility>
 #include "pico/stdlib.h"
 #include "stdio.h"
-
- /* sort of forward declaration, seems like in C it is called opaque type */
-typedef struct spi_inst spi_inst_t;
-
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#include "semphr.h"
+#include "../spiDmaDriver/spiDmaDriver.hpp"
 class CLcdDriver
 {
     using pinType = unsigned int;
@@ -18,13 +19,9 @@ class CLcdDriver
         COMMAND = 0,
         PARAMETER = 1,
     };
-    enum class ESpiTransferWidth
-    {
-        ONE_BYTE = 0,
-        TWO_BYTES = 1, 
-    };
+    using CTransferPacket = CSpiDmaDriver::CTransferPacket;
 public:
-    CLcdDriver(spi_inst_t* spi, pinType csPin, pinType lcdRstPin, pinType lcdDcPin);
+    CLcdDriver(QueueHandle_t spiDriverQueue, pinType csPin, pinType lcdRstPin, pinType lcdDcPin);
     ~CLcdDriver() = default;
     /* return: bytes flushed */
     size_t FlushData(const uint8_t* data, size_t len) const;
@@ -43,15 +40,16 @@ public:
     }
 private:
     void LcdResetBlocking() const;
-    void HandleSpiTransfer(const std::function<void()>& spiTransferFunction, const ESpiTransferType type, const ESpiTransferWidth width) const;
+    void HandleSpiTransfer(CTransferPacket& transferPacket, const ESpiTransferType type) const;
     void SetUpRegisters() const;
     uint8_t ReadLcdId() const;
 
-    spi_inst_t* const m_spi;
+    const QueueHandle_t m_spiDriverQueue;
     const pinType m_csPin;
     const pinType m_lcdRstPin;
     const pinType m_lcdDcPin;
     int16_t m_lcdId = -1;
+    SemaphoreHandle_t m_transferMutex;
 
     static constexpr size_t s_bitsPerPixel = 12;
     static constexpr size_t s_pixelsAlongX = 240;

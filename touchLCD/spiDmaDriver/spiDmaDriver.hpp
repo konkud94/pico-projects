@@ -30,15 +30,15 @@ public:
         {
             ;
         }
-        const ETransferType TransferType;
-        const unsigned int SpiBaudrate;
-        const size_t TransferLengthBytes;
-        const uint8_t* const Source;
-        uint8_t* const Destination;
-        const CallbackType BeforeTransferCallback;
-        void* const BeforeCallbackArg;
-        const CallbackType AfterTransferCallback;
-        void* const AfterCallbackArg;
+        ETransferType TransferType;
+        unsigned int SpiBaudrate;
+        size_t TransferLengthBytes;
+        const uint8_t* Source;
+        uint8_t* Destination;
+        CallbackType BeforeTransferCallback;
+        void* BeforeCallbackArg;
+        CallbackType AfterTransferCallback;
+        void* AfterCallbackArg;
     };
 
     CSpiDmaDriver(spi_inst_t* spi, const pinType mosi, const pinType miso, const pinType sck, const unsigned int dmaChannelTx, 
@@ -47,7 +47,7 @@ public:
     CSpiDmaDriver(const CSpiDmaDriver&) = delete;
     CSpiDmaDriver& operator=(const CSpiDmaDriver&) = delete;
 
-    bool PerformTransferBlocking(const CTransferPacket& packet) const;
+    bool PerformTransferBlocking(const CTransferPacket& packet, const unsigned int sleepMS = 10) const;
 private:
     spi_inst_t* const m_spi;
     const unsigned int m_dmaChannelTx;

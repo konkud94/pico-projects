@@ -15,55 +15,36 @@
 #include "graphics/utils/utils.hpp"
 #include "graphics/bitmap/monochromaticBitmap.hpp"
 #include "graphics/layoutController/experimentalLayoutController.hpp"
-
+#include "tasks./tasks.hpp"
+#include "queue.h"
 
 /*
-	important: max refresh rate is around 55 times per second!
+	important: max LCD refresh rate is around 55 times per second!
 */
-uint32_t GetTimeMSSinceBoot()
-{
-	const auto absoluteTime = get_absolute_time();
-	const uint32_t msSinceBoot = to_ms_since_boot(absoluteTime);
-	return msSinceBoot;
-}
+
 int main() 
 {
 	stdio_init_all();
-	spi_init(spi1, 4000000);
 	sleep_ms(5*1000);
-	for(const auto pin : {CPinDefinitions::ChipSelectLcdPin,
-		CPinDefinitions::ChipSelectTouchPadPin, CPinDefinitions::ChipSelectSDPin, CPinDefinitions::LcdBklPin,
-		CPinDefinitions::LcdDcPin, CPinDefinitions::LcdRstPin})
+	for(const auto pin : {CPinDefinitions::ChipSelectTouchPadPin, CPinDefinitions::ChipSelectSDPin, CPinDefinitions::LcdBklPin})
 	{
 		gpio_init(pin);
 		gpio_set_dir(pin, GPIO_OUT);
 		gpio_put(pin, true);
 	}
-	for(const auto pin : {CPinDefinitions::SpiMosiPin,
-		CPinDefinitions::SpiMisoPin, CPinDefinitions::SpiClkPin})
-	{
-		gpio_set_function(pin, GPIO_FUNC_SPI);
-	}
+	QueueHandle_t spiPacketQueue = xQueueCreate(10, sizeof(CSpiDmaDriver::CTransferPacket));
+	assert(spiPacketQueue != nullptr);
 
-	CLcdDriver* const lcdDriver = new CLcdDriver(spi1, CPinDefinitions::ChipSelectLcdPin,
-		CPinDefinitions::LcdRstPin, CPinDefinitions::LcdDcPin);
-	static constexpr size_t lcdBufferSize = lcdDriver->GetBitsPerPixel() * lcdDriver->GetPixelsAlongX() * lcdDriver->GetPixelsAlongY() / (size_t)8 ;
-	uint8_t* const buffer = new uint8_t[lcdBufferSize];
-	if(buffer == nullptr)
-	{
-		assert(false);
-	}
-	CColorBitmapInterface* const bitmap12 = new CBitmap12(240, 320, buffer);
-	CExperimentalLayoutController* const layoutCtrl = new CExperimentalLayoutController(bitmap12);
+	FreeRtosTasks::CSpi1DmaTaskArgs spi1DmaTaskArgs {spiPacketQueue};
+	FreeRtosTasks::CLcdTaskArgs lcdTaskArgs {spiPacketQueue};
+
+	xTaskCreate(FreeRtosTasks::Spi1DmaTask, "Spi1DmaTask", 500, &spi1DmaTaskArgs, 10, NULL);
+	xTaskCreate(FreeRtosTasks::LcdTask, "LCDTask", 500, &lcdTaskArgs, 1, NULL);
+	vTaskStartScheduler();
 
 	while(true)
 	{
-		const uint32_t sleepMS = 20;
-		layoutCtrl->MoveTriangle();
-		const uint32_t status = save_and_disable_interrupts();
-		lcdDriver->FlushData(layoutCtrl->GetBuffer(), lcdBufferSize);
-		restore_interrupts(status);
-		sleep_ms(sleepMS);
+		;
 	}
 
 	return 0;
