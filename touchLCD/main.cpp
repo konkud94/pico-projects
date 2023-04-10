@@ -49,7 +49,7 @@ int main()
 	FreeRtosTasks::CLcdTaskArgs lcdTaskArgs {spiPacketQueue};
 	xTaskCreate(FreeRtosTasks::Spi1DmaTask, "Spi1DmaTask", 1000, &spi1DmaTaskArgs, 1, NULL);
 	xTaskCreate(FreeRtosTasks::LcdTask, "LCDTask", 1000, &lcdTaskArgs, 1, NULL);
-	xTaskCreate(HeartBeatTask, "HeartBeatTask", 300, NULL, 2, NULL);
+	xTaskCreate(HeartBeatTask, "HeartBeatTask", 300, NULL, 1, NULL);
 	vTaskStartScheduler();
 
 	while(true)

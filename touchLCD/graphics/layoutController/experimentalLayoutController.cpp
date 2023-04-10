@@ -1,24 +1,30 @@
 #include "experimentalLayoutController.hpp"
 #include "../bitmap/monochromaticBitmap.hpp"
-
 CExperimentalLayoutController::CExperimentalLayoutController(CColorBitmapInterface* const mainBitMap)
-    : CLayoutControllerInterface(mainBitMap), m_triangleBitmap(new CMonochromaticBitmap(60, 60, new uint8_t[CGraphicsUtils::GetRequiredBufferSizeBytes(60, 60, 2)]))
+    : CLayoutControllerInterface(mainBitMap),
+    m_triangleBitmap(new CMonochromaticBitmap(m_triangleBitMapSizeX, m_triangleBitMapSizeY,
+        new uint8_t[CGraphicsUtils::GetRequiredBufferSizeBytes(m_triangleBitMapSizeX, m_triangleBitMapSizeY, 2)]))
 {
     CBitmapUtils::FillBitmapWithTriangle(*m_triangleBitmap);
+    const auto& backgroundColorDescr = CBankOfColors::GetColor(m_backgroundColorName);
+    const auto& triangleColorDescr = CBankOfColors::GetColor(m_triangleColorName);
+    m_backgroundColor12 = CGraphicsUtils::RGBToPixel12Bit(backgroundColorDescr.Red, 
+        backgroundColorDescr.Green, backgroundColorDescr.Blue);
+    m_triangleColor12 = CGraphicsUtils::RGBToPixel12Bit(triangleColorDescr.Red, 
+        triangleColorDescr.Green, triangleColorDescr.Blue);
+    m_mainBitMap->SetWholeBufferToColor(m_backgroundColor12, CColorBitmapInterface::EPixelType::BitsPerPixel12);
 }
 
 void CExperimentalLayoutController::MoveTriangle()
 {
-    const auto& backgroundColorDescr = CBankOfColors::GetColor(m_backgroundColorName);
-    const auto& triangleColorDescr = CBankOfColors::GetColor(m_triangleColorName);
-    const uint16_t backgroundColor12 = CGraphicsUtils::RGBToPixel12Bit(backgroundColorDescr.Red, 
-        backgroundColorDescr.Green, backgroundColorDescr.Blue);
-    const uint16_t triangleColor12 = CGraphicsUtils::RGBToPixel12Bit(triangleColorDescr.Red, 
-        triangleColorDescr.Green, triangleColorDescr.Blue);
-    m_mainBitMap->SetWholeBufferToColor(backgroundColor12, CColorBitmapInterface::EPixelType::BitsPerPixel12);
-    m_mainBitMap->PutMonoBitmapAt(m_trianglePosX, m_trianglePosY, *m_triangleBitmap, triangleColor12,
-        backgroundColor12, CColorBitmapInterface::EPixelType::BitsPerPixel12);
-
+    /* clear previous */
+    m_mainBitMap->PutMonoBitmapAt(m_prevTrianglePosX, m_prevTrianglePosY, *m_triangleBitmap, m_backgroundColor12,
+        m_backgroundColor12, CColorBitmapInterface::EPixelType::BitsPerPixel12);
+    /* put new */
+    m_mainBitMap->PutMonoBitmapAt(m_trianglePosX, m_trianglePosY, *m_triangleBitmap, m_triangleColor12,
+        m_backgroundColor12, CColorBitmapInterface::EPixelType::BitsPerPixel12);
+    m_prevTrianglePosX = m_trianglePosX;
+    m_prevTrianglePosY = m_trianglePosY;
     static constexpr size_t advanceRate = 1;
     m_trianglePosX += advanceRate;
     m_trianglePosY += advanceRate;
