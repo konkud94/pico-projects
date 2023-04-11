@@ -24,6 +24,7 @@ namespace FreeRtosTasks
             if(xQueueReceive(spiPacketQueue, (void*)&transferPacketPlaceHolder, portMAX_DELAY) == pdTRUE)
             {
                 [[maybe_unused]] const bool ret = spiDmaDriver->PerformTransferBlocking(transferPacketPlaceHolder, 5);
+                assert(ret);
             }
             else
             {

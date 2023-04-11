@@ -14,6 +14,11 @@ namespace FreeRtosTasks
     {
         QueueHandle_t SpiPacketQueue;
     };
+    struct CTouchPadTaskArgs
+    {
+        QueueHandle_t SpiPacketQueue;
+    };
     void Spi1DmaTask(void* args);
     void LcdTask(void* args);
+    void TouchPadTask(void* args);
 }

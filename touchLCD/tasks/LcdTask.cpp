@@ -4,7 +4,6 @@
 #include "../lcdController/lcdDriver.hpp"
 #include "../graphics/bitmap/bitmap12.hpp"
 #include "../graphics/layoutController/experimentalLayoutController.hpp"
-#include "hardware/spi.h"
 #include "tasks.hpp"
 #include "FreeRTOS.h"
 #include "task.h"

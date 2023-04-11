@@ -16,23 +16,31 @@ CSpiDmaDriver::CSpiDmaDriver(spi_inst_t* spi, const pinType mosi, const pinType 
 }
 bool CSpiDmaDriver::PerformTransferBlocking(const CTransferPacket& packet, const unsigned int sleepMS) const
 {
-    const bool writeTransfer = (packet.TransferType == ETransferType::WRITE || 
-        packet.TransferType == ETransferType::READnWRITE ) && packet.Source != nullptr;
-    const bool readTransfer = (packet.TransferType == ETransferType::READ || 
-        packet.TransferType == ETransferType::READnWRITE ) && packet.Destination != nullptr;
-    spi_set_baudrate(m_spi, packet.SpiBaudrate);
-    const bool faultyPacket = (!writeTransfer && !readTransfer) || packet.TransferLengthBytes == 0;
+    const bool faultyPacket = packet.TransferLengthBytes == 0 || packet.Source == nullptr || 
+        (packet.TransferType == ETransferType::READnWRITE && packet.Destination == nullptr);
     if(faultyPacket)
     {
+        /* 
+            perform callback even though there is no spi transaction
+                to release mutexes in calling threads
+        */
+        if(packet.BeforeTransferCallback)
+        {
+            packet.BeforeTransferCallback(packet.BeforeCallbackArg);        
+        }
+        if(packet.AfterTransferCallback)
+        {
+            packet.AfterTransferCallback(packet.AfterCallbackArg);        
+        }
         return false;
     }
+    spi_set_baudrate(m_spi, packet.SpiBaudrate);
     if(packet.BeforeTransferCallback)
     {
         packet.BeforeTransferCallback(packet.BeforeCallbackArg);        
     }
-    uint32_t dmaChannelMask = 0;
-    if(writeTransfer)
     {
+        /* write channel */
         dma_channel_config config = dma_channel_get_default_config(m_dmaChannelTx);
         channel_config_set_transfer_data_size(&config, DMA_SIZE_8);
         channel_config_set_dreq(&config, spi_get_dreq(m_spi, true));
@@ -41,24 +49,29 @@ bool CSpiDmaDriver::PerformTransferBlocking(const CTransferPacket& packet, const
                             packet.Source,
                             packet.TransferLengthBytes,
                             false);
-        dmaChannelMask |= (1u << m_dmaChannelTx);
     }
-    if(readTransfer)
     {
+        /*
+            read channel
+            even if transaction is of type 'Write' only
+                launch m_dmaChannelRx to drain spi fifo from garbage data
+        */
+        const bool writeOnlyTransfer = packet.TransferType == ETransferType::WRITE;
+        const bool writeAddressIncrement = !writeOnlyTransfer;
+        uint8_t dummyDestination;
+        uint8_t* writeToAddress = writeOnlyTransfer? &dummyDestination : packet.Destination;
         dma_channel_config config = dma_channel_get_default_config(m_dmaChannelRx);
         channel_config_set_transfer_data_size(&config, DMA_SIZE_8);
         channel_config_set_dreq(&config, spi_get_dreq(m_spi, false));
         channel_config_set_read_increment(&config, false);
-        channel_config_set_write_increment(&config, true);
-        channel_config_set_transfer_data_size(&config, DMA_SIZE_8);
-        channel_config_set_dreq(&config, spi_get_dreq(m_spi, true));
+        channel_config_set_write_increment(&config, writeAddressIncrement);
         dma_channel_configure(m_dmaChannelRx, &config,
-                    packet.Destination,
+                    writeToAddress,
                     &spi_get_hw(m_spi)->dr,
                     packet.TransferLengthBytes,
                     false);
-        dmaChannelMask |= (1u << m_dmaChannelRx);
     }
+    const uint32_t dmaChannelMask = (1u << m_dmaChannelTx) | (1u << m_dmaChannelRx);
     dma_start_channel_mask(dmaChannelMask);
     while(dma_channel_is_busy(m_dmaChannelRx) || dma_channel_is_busy(m_dmaChannelTx))
     {

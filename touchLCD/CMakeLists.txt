@@ -11,6 +11,7 @@ add_executable(touchLCD
         spiDmaDriver/spiDmaDriver.cpp
         tasks/LcdTask.cpp
         tasks/spi1DmaTask.cpp
+        tasks/touchPadTask.cpp
         graphics/layoutController/experimentalLayoutController.cpp
         )
 target_include_directories(touchLCD PRIVATE ${CMAKE_CURRENT_LIST_DIR})

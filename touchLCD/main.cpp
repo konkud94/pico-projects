@@ -36,8 +36,8 @@ void HeartBeatTask(void* arg)
 int main() 
 {
 	stdio_init_all();
-	//sleep_ms(5*1000);
-	for(const auto pin : {CPinDefinitions::ChipSelectTouchPadPin, CPinDefinitions::ChipSelectSDPin, CPinDefinitions::LcdBklPin, (unsigned int)PICO_DEFAULT_LED_PIN})
+	sleep_ms(5*1000);
+	for(const auto pin : {CPinDefinitions::ChipSelectSDPin, CPinDefinitions::LcdBklPin, (unsigned int)PICO_DEFAULT_LED_PIN})
 	{
 		gpio_init(pin);
 		gpio_set_dir(pin, GPIO_OUT);
@@ -47,11 +47,12 @@ int main()
 	assert(spiPacketQueue != nullptr);
 	FreeRtosTasks::CSpi1DmaTaskArgs spi1DmaTaskArgs {spiPacketQueue};
 	FreeRtosTasks::CLcdTaskArgs lcdTaskArgs {spiPacketQueue};
+	FreeRtosTasks::CTouchPadTaskArgs touchPadTaskArgs {spiPacketQueue};
 	xTaskCreate(FreeRtosTasks::Spi1DmaTask, "Spi1DmaTask", 1000, &spi1DmaTaskArgs, 1, NULL);
 	xTaskCreate(FreeRtosTasks::LcdTask, "LCDTask", 1000, &lcdTaskArgs, 1, NULL);
+	xTaskCreate(FreeRtosTasks::TouchPadTask, "TouchPadTask", 350, &touchPadTaskArgs, 1, NULL);
 	xTaskCreate(HeartBeatTask, "HeartBeatTask", 300, NULL, 1, NULL);
 	vTaskStartScheduler();
-
 	while(true)
 	{
 		;

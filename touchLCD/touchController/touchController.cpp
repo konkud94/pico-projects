@@ -1,39 +1,68 @@
 #include "touchController.hpp"
-#include "hardware/spi.h"
-#include "pico/stdlib.h"
+#include <functional>
+#include "hardware/gpio.h"
 
-/*x, y*/
-std::pair<uint16_t, uint16_t> CTouchController::GetRawAdcXY(const unsigned int chipSelectPin, spi_inst_t* const spi)
+CTouchController::CTouchController(QueueHandle_t spiDriverQueue, pinType csPin)
+    : m_spiDriverQueue(spiDriverQueue),
+    m_csPin(csPin)
 {
-    gpio_put(chipSelectPin, false);
-    const uint16_t x = GetRawAdcVal(0xD0, spi);
-    const uint16_t y = GetRawAdcVal(0x90, spi);
-    gpio_put(chipSelectPin, true);
-    return std::make_pair(x, y);
+    gpio_init(csPin);
+    gpio_set_dir(csPin, GPIO_OUT);
+    gpio_put(csPin, true);
+
+    m_transferMutex = xSemaphoreCreateMutex();
+    assert(m_transferMutex != nullptr);
 }
-uint16_t CTouchController::GetRawAdcVal(const uint8_t command, spi_inst_t* const spi)
+std::pair<uint16_t, uint16_t> CTouchController::GetRawAdcXY()
 {
+    static constexpr size_t transferLengthBytes = 6;
+    const uint8_t payload[transferLengthBytes] = {s_commandX, s_dummySpiVal, s_dummySpiVal, s_commandY, s_dummySpiVal, s_dummySpiVal};
+    uint8_t receivedData[transferLengthBytes];
+    CTransferPacket transferPacket(ETransferType::READnWRITE, s_spiBaudrate, transferLengthBytes, payload, 
+        receivedData, nullptr, nullptr, nullptr, nullptr);
+    transferPacket.BeforeCallbackArg = nullptr;
+    transferPacket.AfterCallbackArg = nullptr;
+    transferPacket.BeforeTransferCallback = [this](void* arg){
+        (void)arg;
+        gpio_put(m_csPin, false);
+    };
+    transferPacket.AfterTransferCallback = [this](void* arg){
+        (void)arg;
+        gpio_put(m_csPin, true);
+        xSemaphoreGive(m_transferMutex);
+    };
     {
-        uint8_t dummy;
-        [[maybe_unused]] auto ret = spi_write_read_blocking(spi, &command, &dummy, 1);
+        [[maybe_unused]] const bool ret = xSemaphoreTake(m_transferMutex, portMAX_DELAY);
+        assert(ret == pdTrue);
     }
-    /*TODO: verify real busy interval*/
-    constexpr uint16_t busyTimeUS = 1;
-    sleep_us(busyTimeUS);
-    uint16_t rawAdcVal;
-    static constexpr uint8_t dummyWriteVal = 0x00;
-    /*TODO: instead perform one 16bit transaction?*/
     {
-        uint8_t readVal;
-        [[maybe_unused]] auto ret = spi_write_read_blocking(spi, &dummyWriteVal, &readVal, 1);
-        rawAdcVal = (uint16_t)readVal;
+        [[maybe_unused]] const bool ret = xQueueSend(m_spiDriverQueue, &transferPacket, portMAX_DELAY);
+        assert(ret == pdTrue);
+    }
+    /* block until transaction is finished */
+    {
+        [[maybe_unused]] const bool ret = xSemaphoreTake(m_transferMutex, portMAX_DELAY);
+        assert(ret == pdTrue);
+        xSemaphoreGive(m_transferMutex);
+    }
+    uint16_t x, y;
+    /* x */
+    {
+        uint16_t rawAdcVal;
+        rawAdcVal = (uint16_t)receivedData[1];
         rawAdcVal <<= 8;
-    }
-    {
-        uint8_t readVal;
-        [[maybe_unused]] auto ret = spi_write_read_blocking(spi, &dummyWriteVal, &readVal, 1);
-        rawAdcVal |= (uint16_t)readVal;
+        rawAdcVal |= (uint16_t)receivedData[2];
         rawAdcVal >>= 3;
+        x = rawAdcVal;
     }
-    return rawAdcVal;
+    /* y */
+    {
+        uint16_t rawAdcVal;
+        rawAdcVal = (uint16_t)receivedData[4];
+        rawAdcVal <<= 8;
+        rawAdcVal |= (uint16_t)receivedData[5];
+        rawAdcVal >>= 3;
+        y = rawAdcVal;
+    }
+    return std::make_pair(x, y);
 }

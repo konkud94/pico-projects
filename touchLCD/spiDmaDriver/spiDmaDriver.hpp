@@ -16,8 +16,7 @@ public:
     enum class ETransferType
     {
         WRITE = 0,
-        READ = 1,
-        READnWRITE = 2,
+        READnWRITE = 1,
     };
     struct CTransferPacket
     {
