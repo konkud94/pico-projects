@@ -71,6 +71,7 @@ unsigned char SD_GetResponse(unsigned char Response)
 		return MSD_RESPONSE_FAILURE;  
 	else 
 		return MSD_RESPONSE_NO_ERROR;
+		return MSD_RESPONSE_NO_ERROR;
 }
 
 //read a buffer from sd card.
@@ -114,7 +115,7 @@ unsigned char SD_SendBlock(unsigned char*buf,unsigned char cmd)
 }
 
 //send a command to sd card 
-//cmd£ºcommand
+//cmdï¿½ï¿½command
 //arg: parameter
 //crc: crc
 //return: response sent back from sd card.
@@ -163,7 +164,7 @@ unsigned char SD_GetCID(unsigned char *cid_data)
 unsigned char SD_GetCSD(unsigned char *csd_data)
 {
     unsigned char r1;	 
-    r1 = SD_SendCmd(CMD9,0,0x01);//·¢CMD9ÃüÁî£¬¶ÁCSD send CMD9 in order to get CSD
+    r1 = SD_SendCmd(CMD9,0,0x01);//ï¿½ï¿½CMD9ï¿½ï¿½ï¿½î£¬ï¿½ï¿½CSD send CMD9 in order to get CSD
     if(r1 == 0)	{
     	r1=SD_RecvData(csd_data, 16);
     }

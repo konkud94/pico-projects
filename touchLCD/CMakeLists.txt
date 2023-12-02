@@ -13,6 +13,7 @@ add_executable(touchLCD
         tasks/spi1DmaTask.cpp
         tasks/touchPadTask.cpp
         graphics/layoutController/experimentalLayoutController.cpp
+        syncSDDriver/sd.cpp
         )
 target_include_directories(touchLCD PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 # enable usb output, disable uart output
