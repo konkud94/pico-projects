@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-#set(PICO_BOARD pico_w)
+set(PICO_BOARD pico_w)
 
 # Pull in SDK (must be before project)
 include(pico_sdk_import.cmake)
@@ -32,3 +32,4 @@ add_subdirectory(lcdTest)
 add_subdirectory(touchLCD)
 add_subdirectory(rtosSandbox)
 add_subdirectory(picoWSandbox)
+add_subdirectory(door_phone)
