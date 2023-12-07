@@ -1,11 +1,12 @@
 add_executable(door_phone
-        blink.cpp
+        main.cpp
         )
 
 target_link_libraries(door_phone
         pico_stdlib              # for core functionality
         pico_cyw43_arch_none     # we need Wifi to access the GPIO, but we don't need anything else
         pico_time
+        hardware_adc
         )
 
 # create map/bin/hex file etc.
