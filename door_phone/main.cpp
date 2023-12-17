@@ -8,14 +8,11 @@
 #include "tasks/task_cyw43_blinker.hpp"
 namespace {
 void InitOutputPins() {
-  /*
-   0 - lock relay
-   1 - CA mute relay
-  */
-  for (const auto& pin : {0, 1}) {
+  for (const auto& pin : {Constants::Pins::kCaSignalMuteRelayPin,
+                          Constants::Pins::kDoorLockRelayPin}) {
     gpio_init(pin);
     gpio_set_dir(pin, GPIO_OUT);
-    gpio_put(pin, true);
+    gpio_put(pin, !Constants::Pins::kActivateRelayPinValue);
   }
 }
 }  // namespace
@@ -36,15 +33,14 @@ int main() {
     return -1;
   }
   ::InitOutputPins();
-  const auto adc_ca_channel = RP2040Adc::EChannelId::CHANNEL_GPIO_28;
-  RP2040Adc adc({adc_ca_channel});
+  RP2040Adc adc({Constants::Adc::kCaSignalAdcChannel});
   CaSignalProcessor ca_signal_processor(
-      &adc, static_cast<unsigned int>(adc_ca_channel));
+      &adc, static_cast<unsigned int>(Constants::Adc::kCaSignalAdcChannel));
   ca_signal_processor_ptr = &ca_signal_processor;
   struct repeating_timer timer_ca;
-  const int32_t ca_signal_sample_rate_ms = 5;
-  add_repeating_timer_ms(-ca_signal_sample_rate_ms,
-                         PeriodicCallbackCaSignalProcessor, NULL, &timer_ca);
+  add_repeating_timer_ms(
+      -static_cast<int32_t>(Constants::Intervals::kCaSignalSamplingRateMs),
+      PeriodicCallbackCaSignalProcessor, NULL, &timer_ca);
   HardwareClock clock;
   TaskCyw43Blinker cyw43_blinker_task(
       &clock, Constants::Intervals::kCyw43ToggleLedRateMS);
