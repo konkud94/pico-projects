@@ -5,7 +5,7 @@ add_executable(door_phone
         hardware_clock/hardware_clock.cpp
         main.cpp
         tasks/task_cyw43_blinker.cpp
-
+        repeating_timer/repeating_timer.cpp
         )
 
 target_link_libraries(door_phone
