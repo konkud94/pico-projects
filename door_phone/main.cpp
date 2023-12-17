@@ -1,9 +1,11 @@
 #include "ca_signal_processor/ca_signal_processor.hpp"
+#include "constants/constants.h"
+#include "hardware_clock/hardware_clock.h"
 #include "initializer_list"
 #include "pico/cyw43_arch.h"
 #include "pico/stdlib.h"
-#include "pico/time.h"
 #include "rp2040_adc/rp2040_adc.hpp"
+#include "tasks/task_cyw43_blinker.hpp"
 namespace {
 void InitOutputPins() {
   /*
@@ -14,19 +16,6 @@ void InitOutputPins() {
     gpio_init(pin);
     gpio_set_dir(pin, GPIO_OUT);
     gpio_put(pin, true);
-  }
-}
-uint32_t GetMsSinceReboot() {
-  const auto absolute = get_absolute_time();
-  return to_ms_since_boot(absolute);
-}
-void ToggleCywLed(const uint32_t time_since_boot_ms) {
-  static constexpr uint32_t toggle_period_ms = 500;
-  static uint32_t next_toggle_timestamp_ms = 0;
-  if (time_since_boot_ms > next_toggle_timestamp_ms) {
-    const bool pin_val = cyw43_arch_gpio_get(CYW43_WL_GPIO_LED_PIN);
-    cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, !pin_val);
-    next_toggle_timestamp_ms = time_since_boot_ms + toggle_period_ms;
   }
 }
 }  // namespace
@@ -56,8 +45,10 @@ int main() {
   const int32_t ca_signal_sample_rate_ms = 5;
   add_repeating_timer_ms(-ca_signal_sample_rate_ms,
                          PeriodicCallbackCaSignalProcessor, NULL, &timer_ca);
+  HardwareClock clock;
+  TaskCyw43Blinker cyw43_blinker_task(
+      &clock, Constants::Intervals::kCyw43ToggleLedRateMS);
   while (true) {
-    const uint32_t time_since_boot_ms = ::GetMsSinceReboot();
-    ::ToggleCywLed(time_since_boot_ms);
+    cyw43_blinker_task.Update();
   }
 }
