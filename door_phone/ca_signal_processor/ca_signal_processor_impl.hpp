@@ -5,13 +5,14 @@
 
 #include "../algorithms_and_structures/circular_buffer.h"
 #include "../interfaces/adc_reader.h"
+#include "../interfaces/ca_signal_processor.hpp"
 
-class CaSignalProcessor {
+class CaSignalProcessorImpl : public CaSignalProcessor {
   static constexpr size_t kBufferCapacity = 50;
   static constexpr uint16_t kAdcThresholdForLevelChange = 1000;
 
  public:
-  CaSignalProcessor(AdcReader* adc_reader, unsigned int adc_channel);
+  CaSignalProcessorImpl(AdcReader* adc_reader, unsigned int adc_channel);
   /* true - on */
   bool GetCurrentCaSignalLevel();
   /* to be called from ISR */

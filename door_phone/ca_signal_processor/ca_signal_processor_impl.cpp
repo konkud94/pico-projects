@@ -1,14 +1,14 @@
-#include "ca_signal_processor.hpp"
+#include "ca_signal_processor_impl.hpp"
 
 #include <assert.h>
 
 #include <algorithm>
-CaSignalProcessor::CaSignalProcessor(AdcReader* adc_reader,
-                                     unsigned int adc_channel)
+CaSignalProcessorImpl::CaSignalProcessorImpl(AdcReader* adc_reader,
+                                             unsigned int adc_channel)
     : adc_reader_(adc_reader), adc_channel_(adc_channel) {
   assert(adc_reader_->IsChannelAvailable(adc_channel_));
 }
-bool CaSignalProcessor::GetCurrentCaSignalLevel() {
+bool CaSignalProcessorImpl::GetCurrentCaSignalLevel() {
   if (enough_samples_ == 0) {
     return false;
   }
@@ -16,7 +16,7 @@ bool CaSignalProcessor::GetCurrentCaSignalLevel() {
   return mean > kAdcThresholdForLevelChange;
 }
 
-void CaSignalProcessor::PeriodicCallback() {
+void CaSignalProcessorImpl::PeriodicCallback() {
   const uint16_t adc_max_val = 4095;
   /* clamp to adc_max_val just in case */
   const uint16_t adc_raw =

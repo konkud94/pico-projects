@@ -1,6 +1,6 @@
 add_executable(door_phone
         main.cpp
-        ca_signal_processor/ca_signal_processor.cpp
+        ca_signal_processor/ca_signal_processor_impl.cpp
         rp2040_adc/rp2040_adc.cpp
         hardware_clock/hardware_clock.cpp
         main.cpp

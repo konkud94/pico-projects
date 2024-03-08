@@ -1,6 +1,6 @@
 #include <utility>
 
-#include "ca_signal_processor/ca_signal_processor.hpp"
+#include "ca_signal_processor/ca_signal_processor_impl.hpp"
 #include "constants/constants.h"
 #include "hardware_clock/hardware_clock.h"
 #include "initializer_list"
@@ -28,7 +28,7 @@ int main() {
   }
   ::InitOutputPins();
   RP2040Adc adc({Constants::Adc::kCaSignalAdcChannel});
-  CaSignalProcessor ca_signal_processor(
+  CaSignalProcessorImpl ca_signal_processor(
       &adc, static_cast<unsigned int>(Constants::Adc::kCaSignalAdcChannel));
 
   RepeatingTimer timer_ca(std::move([&ca_signal_processor]() {
