@@ -1,14 +1,14 @@
 
-#include "task_ca_signal_observer.hpp"
+#include "ca_signal_observer.hpp"
 
-TaskCaSignalObserver::TaskCaSignalObserver(
-    Clock* clock, uint32_t interval_ms, CaSignalProcessor* ca_signal_processor,
-    ConsentProvider* consent_provider)
-    : Task(clock, interval_ms),
+CaSignalObserver::CaSignalObserver(Clock* clock, uint32_t interval_ms,
+                                   CaSignalProcessor* ca_signal_processor,
+                                   ConsentProvider* consent_provider)
+    : TimeAware(clock, interval_ms),
       ca_signal_processor_(ca_signal_processor),
       consent_provider_(consent_provider) {}
 
-void TaskCaSignalObserver::InternalUpdate(const uint64_t current_ms) {
+void CaSignalObserver::InternalUpdate(const uint64_t current_ms) {
   (void)current_ms;
 
   const bool ca_signal_value = ca_signal_processor_->GetCurrentCaSignalLevel();
@@ -18,7 +18,7 @@ void TaskCaSignalObserver::InternalUpdate(const uint64_t current_ms) {
   }
 }
 
-void TaskCaSignalObserver::OnCaSignalChange(const bool current_state) {
+void CaSignalObserver::OnCaSignalChange(const bool current_state) {
   /* TODO: log signal change along with current_state */
   if (current_state && consent_provider_->GetDoorOpenConsent()) {
     /*

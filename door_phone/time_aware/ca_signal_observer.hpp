@@ -3,13 +3,13 @@
 #include "../interfaces/ca_signal_processor.hpp"
 #include "../interfaces/clock.h"
 #include "../interfaces/consent_provider.hpp"
-#include "../interfaces/task.h"
+#include "../interfaces/time_aware.h"
 
-class TaskCaSignalObserver : public Task {
+class CaSignalObserver : public TimeAware {
  public:
-  TaskCaSignalObserver(Clock* clock, uint32_t interval_ms,
-                       CaSignalProcessor* ca_signal_processor,
-                       ConsentProvider* consent_provider);
+  CaSignalObserver(Clock* clock, uint32_t interval_ms,
+                   CaSignalProcessor* ca_signal_processor,
+                   ConsentProvider* consent_provider);
 
  protected:
   void InternalUpdate(const uint64_t current_ms) override;

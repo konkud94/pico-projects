@@ -1,11 +1,11 @@
 #pragma once
 
 #include "../interfaces/clock.h"
-#include "../interfaces/task.h"
+#include "../interfaces/time_aware.h"
 
-class TaskCyw43Blinker : public Task {
+class Cyw43Blinker : public TimeAware {
  public:
-  TaskCyw43Blinker(Clock* clock, uint32_t interval_ms);
+  Cyw43Blinker(Clock* clock, uint32_t interval_ms);
 
  protected:
   void InternalUpdate(const uint64_t current_ms) override;

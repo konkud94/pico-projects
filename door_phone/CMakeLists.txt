@@ -4,7 +4,8 @@ add_executable(door_phone
         rp2040_adc/rp2040_adc.cpp
         hardware_clock/hardware_clock.cpp
         main.cpp
-        tasks/task_cyw43_blinker.cpp
+        time_aware/cyw43_blinker.cpp
+        time_aware/ca_signal_observer.cpp
         repeating_timer/repeating_timer.cpp
         consent_provider/consent_provider_impl.cpp
         )

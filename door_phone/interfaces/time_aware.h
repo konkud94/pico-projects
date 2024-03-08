@@ -2,11 +2,11 @@
 #include <inttypes.h>
 
 #include "clock.h"
-class Task {
+class TimeAware {
  public:
-  Task(Clock* clock, const uint32_t interval_ms)
+  TimeAware(Clock* clock, const uint32_t interval_ms)
       : clock_(clock), interval_ms_(interval_ms) {}
-  virtual ~Task() = default;
+  virtual ~TimeAware() = default;
   void Update() {
     const uint64_t current_ms = clock_->GetMsSinceBoot();
     if (first_update_ || current_ms >= next_update_at_ms) {
