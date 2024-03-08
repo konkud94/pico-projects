@@ -1,6 +1,7 @@
 #include <utility>
 
 #include "ca_signal_processor/ca_signal_processor_impl.hpp"
+#include "consent_provider/consent_provider_impl.hpp"
 #include "constants/constants.h"
 #include "hardware_clock/hardware_clock.h"
 #include "initializer_list"
@@ -36,6 +37,7 @@ int main() {
                           }),
                           Constants::Intervals::kCaSignalSamplingRateMs);
   HardwareClock clock;
+  ConsentProviderImpl consent_provider;
   TaskCyw43Blinker cyw43_blinker_task(
       &clock, Constants::Intervals::kCyw43ToggleLedRateMS);
   while (true) {
