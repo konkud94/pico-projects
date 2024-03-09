@@ -21,5 +21,8 @@ struct Constants {
   struct Intervals {
     static constexpr uint32_t kCaSignalSamplingRateMs = 5;
     static constexpr uint32_t kCyw43ToggleLedRateMS = 500;
+    static constexpr uint32_t kProcessedCaSignalObserverRateMS = 50;
+    static constexpr uint32_t kDoorElectricLockUpdateMs = 100;
+    static constexpr uint32_t kWaitBetweenSignalAndOpenDoorMs = 5000;
   };
 };

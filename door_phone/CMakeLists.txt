@@ -3,11 +3,12 @@ add_executable(door_phone
         ca_signal_processor/ca_signal_processor_impl.cpp
         rp2040_adc/rp2040_adc.cpp
         hardware_clock/hardware_clock.cpp
-        main.cpp
         time_aware/cyw43_blinker.cpp
         time_aware/ca_signal_observer.cpp
+        time_aware/door_electric_lock.cpp
         repeating_timer/repeating_timer.cpp
         consent_provider/consent_provider_impl.cpp
+        relay_controller/relay_controller_impl.cpp
         )
 
 target_link_libraries(door_phone
